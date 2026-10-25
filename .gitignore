@@ -1,0 +1,19 @@
+# Build output
+src/bin/
+src/obj/
+*.pdb
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+
+# Local logs and temp
+*.log
+*.tmp
+xaml.b64
+settings.json

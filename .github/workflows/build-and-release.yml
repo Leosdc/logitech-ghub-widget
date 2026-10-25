@@ -1,0 +1,71 @@
+name: Build, Audit & Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Package Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore src/GHubWidget.csproj
+
+      - name: Publish Binaries (Clean Release, No PDB, Deterministic)
+        run: |
+          dotnet publish src/GHubWidget.csproj -c Release -o build/widget /p:DebugType=none /p:DebugSymbols=false /p:ContinuousIntegrationBuild=true
+          if (Test-Path "build/widget/*.pdb") { Remove-Item "build/widget/*.pdb" -Force }
+
+      - name: Generate Release Zip Package
+        run: |
+          Compress-Archive -Path 'build/widget/*', 'installer/*', 'Instalar-Widget.bat', 'Instalar-Com-Interface.bat', 'Desinstalar-Widget.bat', 'README.md' -DestinationPath 'Logitech-GHub-Widget-Setup.zip' -Force
+
+      - name: Compute SHA256 Hashes
+        id: compute_hash
+        run: |
+          $zipHash = (Get-FileHash 'Logitech-GHub-Widget-Setup.zip' -Algorithm SHA256).Hash
+          $dllHash = (Get-FileHash 'build/widget/LogitechGHubWidget.dll' -Algorithm SHA256).Hash
+          $exeHash = (Get-FileHash 'build/widget/LogitechGHubWidget.exe' -Algorithm SHA256).Hash
+          
+          Write-Host "=== SHA256 Verification ==="
+          Write-Host "Logitech-GHub-Widget-Setup.zip: $zipHash"
+          Write-Host "LogitechGHubWidget.dll:         $dllHash"
+          Write-Host "LogitechGHubWidget.exe:         $exeHash"
+          
+          "$zipHash  Logitech-GHub-Widget-Setup.zip" | Out-File -Encoding utf8 SHA256SUMS.txt
+          "$dllHash  LogitechGHubWidget.dll" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$exeHash  LogitechGHubWidget.exe" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Logitech-GHub-Widget-Setup
+          path: |
+            Logitech-GHub-Widget-Setup.zip
+            SHA256SUMS.txt
+
+      - name: Create GitHub Release (On Tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Logitech-GHub-Widget-Setup.zip
+            SHA256SUMS.txt
+          generate_release_notes: true
