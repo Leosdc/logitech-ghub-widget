@@ -26,16 +26,30 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore Dependencies
-        run: dotnet restore src/GHubWidget.csproj
+        run: |
+          dotnet restore src/GHubWidget.csproj
+          dotnet restore cli/GHubCli.csproj
 
-      - name: Publish Binaries (Clean Release, No PDB, Deterministic)
+      - name: Publish Widget Binaries (Clean Release, No PDB, Deterministic)
         run: |
           dotnet publish src/GHubWidget.csproj -c Release -o build/widget /p:DebugType=none /p:DebugSymbols=false /p:ContinuousIntegrationBuild=true
           if (Test-Path "build/widget/*.pdb") { Remove-Item "build/widget/*.pdb" -Force }
 
-      - name: Generate Release Zip Package
+      - name: Publish CLI Binaries (Cross-Platform Single-File)
         run: |
-          Compress-Archive -Path 'build/widget/*', 'installer/*', 'Instalar-Widget.bat', 'Instalar-Com-Interface.bat', 'Desinstalar-Widget.bat', 'README.md' -DestinationPath 'Logitech-GHub-Widget-Setup.zip' -Force
+          dotnet publish cli/GHubCli.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o build/cli/win-x64
+          dotnet publish cli/GHubCli.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o build/cli/linux-x64
+          dotnet publish cli/GHubCli.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o build/cli/osx-x64
+          dotnet publish cli/GHubCli.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o build/cli/osx-arm64
+
+          Compress-Archive -Path 'build/cli/win-x64/ghub-cli.exe' -DestinationPath 'ghub-cli-win-x64.zip' -Force
+          tar -czf ghub-cli-linux-x64.tar.gz -C build/cli/linux-x64 ghub-cli
+          tar -czf ghub-cli-osx-x64.tar.gz -C build/cli/osx-x64 ghub-cli
+          tar -czf ghub-cli-osx-arm64.tar.gz -C build/cli/osx-arm64 ghub-cli
+
+      - name: Generate Widget Release Zip Package
+        run: |
+          Compress-Archive -Path 'build/widget/*', 'installer/*', 'Instalar-Widget.bat', 'Instalar-Com-Interface.bat', 'Desinstalar-Widget.bat', 'README.md', 'ghub-cli.py' -DestinationPath 'Logitech-GHub-Widget-Setup.zip' -Force
 
       - name: Compute SHA256 Hashes
         id: compute_hash
@@ -43,15 +57,28 @@ jobs:
           $zipHash = (Get-FileHash 'Logitech-GHub-Widget-Setup.zip' -Algorithm SHA256).Hash
           $dllHash = (Get-FileHash 'build/widget/LogitechGHubWidget.dll' -Algorithm SHA256).Hash
           $exeHash = (Get-FileHash 'build/widget/LogitechGHubWidget.exe' -Algorithm SHA256).Hash
+          $cliWinHash = (Get-FileHash 'ghub-cli-win-x64.zip' -Algorithm SHA256).Hash
+          $cliLinHash = (Get-FileHash 'ghub-cli-linux-x64.tar.gz' -Algorithm SHA256).Hash
+          $cliMacX64Hash = (Get-FileHash 'ghub-cli-osx-x64.tar.gz' -Algorithm SHA256).Hash
+          $cliMacArmHash = (Get-FileHash 'ghub-cli-osx-arm64.tar.gz' -Algorithm SHA256).Hash
+          $pyHash = (Get-FileHash 'ghub-cli.py' -Algorithm SHA256).Hash
           
           Write-Host "=== SHA256 Verification ==="
           Write-Host "Logitech-GHub-Widget-Setup.zip: $zipHash"
-          Write-Host "LogitechGHubWidget.dll:         $dllHash"
-          Write-Host "LogitechGHubWidget.exe:         $exeHash"
+          Write-Host "ghub-cli-win-x64.zip:           $cliWinHash"
+          Write-Host "ghub-cli-linux-x64.tar.gz:      $cliLinHash"
+          Write-Host "ghub-cli-osx-x64.tar.gz:        $cliMacX64Hash"
+          Write-Host "ghub-cli-osx-arm64.tar.gz:      $cliMacArmHash"
+          Write-Host "ghub-cli.py:                    $pyHash"
           
           "$zipHash  Logitech-GHub-Widget-Setup.zip" | Out-File -Encoding utf8 SHA256SUMS.txt
           "$dllHash  LogitechGHubWidget.dll" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
           "$exeHash  LogitechGHubWidget.exe" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$cliWinHash  ghub-cli-win-x64.zip" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$cliLinHash  ghub-cli-linux-x64.tar.gz" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$cliMacX64Hash  ghub-cli-osx-x64.tar.gz" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$cliMacArmHash  ghub-cli-osx-arm64.tar.gz" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$pyHash  ghub-cli.py" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -59,6 +86,11 @@ jobs:
           name: Logitech-GHub-Widget-Setup
           path: |
             Logitech-GHub-Widget-Setup.zip
+            ghub-cli-win-x64.zip
+            ghub-cli-linux-x64.tar.gz
+            ghub-cli-osx-x64.tar.gz
+            ghub-cli-osx-arm64.tar.gz
+            ghub-cli.py
             SHA256SUMS.txt
 
       - name: Create GitHub Release (On Tag)
@@ -67,5 +99,10 @@ jobs:
         with:
           files: |
             Logitech-GHub-Widget-Setup.zip
+            ghub-cli-win-x64.zip
+            ghub-cli-linux-x64.tar.gz
+            ghub-cli-osx-x64.tar.gz
+            ghub-cli-osx-arm64.tar.gz
+            ghub-cli.py
             SHA256SUMS.txt
           generate_release_notes: true

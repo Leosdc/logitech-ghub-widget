@@ -42,6 +42,18 @@ namespace GHubWidget.Services
             if (IsConnected && _webSocket?.State == WebSocketState.Open && _cts != null)
             {
                 await SendJsonAsync("{\"path\":\"/devices/list\",\"verb\":\"GET\"}", _cts.Token);
+
+                List<string> deviceIds;
+                lock (_deviceMap)
+                {
+                    deviceIds = new List<string>(_deviceMap.Keys);
+                }
+
+                foreach (var id in deviceIds)
+                {
+                    var req = $"{{\"path\":\"/battery/{id}/state\",\"verb\":\"GET\"}}";
+                    await SendJsonAsync(req, _cts.Token);
+                }
             }
         }
 
@@ -65,6 +77,10 @@ namespace GHubWidget.Services
                     if (_webSocket.State == WebSocketState.Open)
                     {
                         UpdateStatus(true, "Conectado ao G HUB");
+
+                        // Subscribe to real-time events from G HUB
+                        await SendJsonAsync("{\"path\":\"/devices/state/changed\",\"verb\":\"SUBSCRIBE\"}", ct);
+                        await SendJsonAsync("{\"path\":\"/battery/state/changed\",\"verb\":\"SUBSCRIBE\"}", ct);
 
                         // Initial device list request
                         await SendJsonAsync("{\"path\":\"/devices/list\",\"verb\":\"GET\"}", ct);
@@ -168,6 +184,14 @@ namespace GHubWidget.Services
                 {
                     HandleBatteryState(root, path);
                 }
+                else if (path == "/battery/state/changed")
+                {
+                    HandleBatteryState(root, path);
+                }
+                else if (path == "/devices/state/changed")
+                {
+                    _ = RefreshNowAsync();
+                }
             }
             catch { }
         }
@@ -181,9 +205,14 @@ namespace GHubWidget.Services
                 return;
             }
 
+            var currentIds = new HashSet<string>();
+
             foreach (var item in deviceInfos.EnumerateArray())
             {
                 var id = item.GetProperty("id").GetString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id)) continue;
+                currentIds.Add(id);
+
                 var name = item.TryGetProperty("extendedDisplayName", out var nameProp) ? nameProp.GetString() : null;
                 if (string.IsNullOrEmpty(name))
                 {
@@ -194,8 +223,10 @@ namespace GHubWidget.Services
                 var connType = item.TryGetProperty("connectionType", out var connProp) ? connProp.GetString() : "WIRELESS";
                 var devType = "UNKNOWN";
 
+                int activeInterfaceCount = 0;
                 if (item.TryGetProperty("activeInterfaces", out var interfaces) && interfaces.ValueKind == JsonValueKind.Array)
                 {
+                    activeInterfaceCount = interfaces.GetArrayLength();
                     foreach (var iface in interfaces.EnumerateArray())
                     {
                         if (iface.TryGetProperty("deviceType", out var dt))
@@ -204,6 +235,12 @@ namespace GHubWidget.Services
                             break;
                         }
                     }
+                }
+
+                bool isActive = string.Equals(state, "ACTIVE", StringComparison.OrdinalIgnoreCase);
+                if (activeInterfaceCount == 0 && string.Equals(connType, "WIRELESS", StringComparison.OrdinalIgnoreCase))
+                {
+                    isActive = false;
                 }
 
                 WpfApp.Current?.Dispatcher.Invoke(() =>
@@ -218,7 +255,7 @@ namespace GHubWidget.Services
                                 Name = name ?? id,
                                 DeviceType = devType,
                                 ConnectionType = connType ?? "WIRELESS",
-                                IsActive = state == "ACTIVE"
+                                IsActive = isActive
                             };
                             _deviceMap[id] = dev;
                             Devices.Add(dev);
@@ -228,23 +265,38 @@ namespace GHubWidget.Services
                             dev.Name = name ?? dev.Name;
                             dev.DeviceType = devType != "UNKNOWN" ? devType : dev.DeviceType;
                             dev.ConnectionType = connType ?? dev.ConnectionType;
-                            dev.IsActive = (state == "ACTIVE");
+                            dev.IsActive = isActive;
                         }
                     }
                 });
 
-                // Immediately fetch battery for this device
-                _ = SendJsonAsync($"{{\"path\":\"/battery/{id}/state\",\"verb\":\"GET\"}}", CancellationToken.None);
+                if (isActive)
+                {
+                    // Immediately fetch battery for this active device
+                    _ = SendJsonAsync($"{{\"path\":\"/battery/{id}/state\",\"verb\":\"GET\"}}", CancellationToken.None);
+                }
             }
+
+            // Mark devices that are no longer reported in deviceInfos as inactive
+            WpfApp.Current?.Dispatcher.Invoke(() =>
+            {
+                lock (_deviceMap)
+                {
+                    foreach (var kvp in _deviceMap)
+                    {
+                        if (!currentIds.Contains(kvp.Key))
+                        {
+                            kvp.Value.IsActive = false;
+                        }
+                    }
+                }
+            });
         }
 
         private void HandleBatteryState(JsonElement root, string path)
         {
-            if (!root.TryGetProperty("payload", out var payload))
-                return;
-
             string? deviceId = null;
-            if (payload.TryGetProperty("deviceId", out var dIdProp))
+            if (root.TryGetProperty("payload", out var payload) && payload.TryGetProperty("deviceId", out var dIdProp))
             {
                 deviceId = dIdProp.GetString();
             }
@@ -260,6 +312,36 @@ namespace GHubWidget.Services
 
             if (string.IsNullOrEmpty(deviceId))
                 return;
+
+            // Check if result has an error code (e.g. NO_SUCH_PATH when device is off)
+            bool hasError = false;
+            if (root.TryGetProperty("result", out var resProp))
+            {
+                if (resProp.TryGetProperty("code", out var codeProp))
+                {
+                    var code = codeProp.GetString();
+                    if (!string.IsNullOrEmpty(code) && !string.Equals(code, "SUCCESS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasError = true;
+                    }
+                }
+            }
+
+            if (hasError || !root.TryGetProperty("payload", out payload))
+            {
+                // Device battery cannot be read -> device is off or disconnected
+                WpfApp.Current?.Dispatcher.Invoke(() =>
+                {
+                    lock (_deviceMap)
+                    {
+                        if (_deviceMap.TryGetValue(deviceId, out var dev))
+                        {
+                            dev.IsActive = false;
+                        }
+                    }
+                });
+                return;
+            }
 
             int percentage = payload.TryGetProperty("percentage", out var pProp) ? pProp.GetInt32() : 0;
             bool charging = payload.TryGetProperty("charging", out var chProp) && chProp.GetBoolean();
@@ -283,6 +365,7 @@ namespace GHubWidget.Services
                         dev.Mileage = mileage;
                         dev.MaxLifespan = maxLifespan;
                         dev.ConsumptionMw = consumption;
+                        dev.IsActive = true;
 
                         if (percentage <= 20 && !charging)
                         {
@@ -350,4 +433,3 @@ namespace GHubWidget.Services
         }
     }
 }
-

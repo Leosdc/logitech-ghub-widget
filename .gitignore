@@ -1,6 +1,7 @@
 # Build output
-src/bin/
-src/obj/
+**/bin/
+**/obj/
+build/cli/
 *.pdb
 *.user
 *.suo
@@ -17,3 +18,7 @@ src/obj/
 *.tmp
 xaml.b64
 settings.json
+
+# Python
+__pycache__/
+*.pyc

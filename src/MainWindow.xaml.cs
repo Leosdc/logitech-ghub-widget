@@ -112,6 +112,26 @@ namespace GHubWidget
 
             _service.Devices.CollectionChanged += (s, args) =>
             {
+                if (args.NewItems != null)
+                {
+                    foreach (DeviceInfo dev in args.NewItems)
+                    {
+                        dev.PropertyChanged += (devSender, propArgs) =>
+                        {
+                            if (propArgs.PropertyName == nameof(DeviceInfo.IsActive) ||
+                                propArgs.PropertyName == nameof(DeviceInfo.BatteryPercentage) ||
+                                propArgs.PropertyName == nameof(DeviceInfo.IsCharging))
+                            {
+                                Dispatcher.Invoke(() =>
+                                {
+                                    UpdateFooterInfo();
+                                    UpdateTrayToolTip();
+                                });
+                            }
+                        };
+                    }
+                }
+
                 Dispatcher.Invoke(() =>
                 {
                     UpdateFooterInfo();
@@ -297,14 +317,28 @@ namespace GHubWidget
 
         private void UpdateFooterInfo()
         {
-            int count = _service.Devices.Count;
-            if (count == 0)
+            int total = _service.Devices.Count;
+            int active = 0;
+            foreach (var d in _service.Devices)
+            {
+                if (d.IsActive) active++;
+            }
+
+            if (total == 0)
             {
                 TxtFooterInfo.Text = "Nenhum dispositivo detectado";
             }
+            else if (active == 0)
+            {
+                TxtFooterInfo.Text = $"{total} dispositivo(s) cadastrado(s) (todos inativos)";
+            }
+            else if (active == total)
+            {
+                TxtFooterInfo.Text = $"{active} dispositivo(s) conectado(s) e ativo(s)";
+            }
             else
             {
-                TxtFooterInfo.Text = $"{count} dispositivo(s) conectado(s)";
+                TxtFooterInfo.Text = $"{active} de {total} dispositivo(s) ativo(s)";
             }
         }
 
@@ -320,7 +354,10 @@ namespace GHubWidget
             var parts = new System.Collections.Generic.List<string>();
             foreach (var d in _service.Devices)
             {
-                parts.Add($"{d.DeviceCategoryLabel}: {d.BatteryPercentage}%");
+                if (d.IsActive)
+                    parts.Add($"{d.DeviceCategoryLabel}: {d.BatteryPercentage}%");
+                else
+                    parts.Add($"{d.DeviceCategoryLabel}: Inativo");
             }
             var text = string.Join(" | ", parts);
             if (text.Length > 63) text = text.Substring(0, 60) + "...";
