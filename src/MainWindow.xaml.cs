@@ -5,8 +5,10 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using GHubWidget.Helpers;
 using GHubWidget.Models;
 using GHubWidget.Services;
@@ -18,6 +20,8 @@ namespace GHubWidget
 {
     public partial class MainWindow : Window
     {
+        private const int WM_SETTINGCHANGE = 0x001A;
+
         private readonly LgHubService _service = new();
         private AppSettings _settings = new();
         private NotifyIcon? _trayIcon;
@@ -28,9 +32,31 @@ namespace GHubWidget
             InitializeComponent();
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var source = (HwndSource?)PresentationSource.FromVisual(this);
+            source?.AddHook(WndProc);
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WM_SETTINGCHANGE)
+            {
+                if (_settings.ThemeMode == "System")
+                {
+                    Dispatcher.Invoke(() => ApplyTheme("System"));
+                }
+            }
+            return IntPtr.Zero;
+        }
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _settings = AppSettings.Load();
+
+            // Hook system theme change notification
+            SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
 
             // Apply Theme
             ApplyTheme(_settings.ThemeMode);
@@ -157,6 +183,22 @@ namespace GHubWidget
             _service.Start();
         }
 
+        private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+        {
+            if (e.Category == UserPreferenceCategory.General || 
+                e.Category == UserPreferenceCategory.Color || 
+                e.Category == UserPreferenceCategory.VisualStyle)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_settings.ThemeMode == "System")
+                    {
+                        ApplyTheme("System");
+                    }
+                });
+            }
+        }
+
         public void ApplyTheme(string mode)
         {
             bool isDark = mode switch
@@ -174,6 +216,8 @@ namespace GHubWidget
                 Resources["Win11CardBg"] = new SolidColorBrush(Color.FromRgb(43, 43, 43));
                 Resources["Win11CardBorder"] = new SolidColorBrush(Color.FromRgb(62, 62, 62));
                 Resources["Win11Accent"] = new SolidColorBrush(Color.FromRgb(96, 205, 255));
+                Resources["Win11AccentForeground"] = new SolidColorBrush(Color.FromRgb(0, 0, 0));
+                Resources["Win11AccentTint"] = new SolidColorBrush(Color.FromArgb(32, 96, 205, 255));
                 Resources["Win11TextPrimary"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                 Resources["Win11TextSecondary"] = new SolidColorBrush(Color.FromRgb(204, 204, 204));
                 Resources["Win11TextMuted"] = new SolidColorBrush(Color.FromRgb(158, 158, 158));
@@ -182,24 +226,34 @@ namespace GHubWidget
                 Resources["Win11ProgressTrack"] = new SolidColorBrush(Color.FromRgb(26, 26, 26));
                 Resources["Win11ButtonBg"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
                 Resources["Win11ButtonBorder"] = new SolidColorBrush(Color.FromRgb(62, 62, 62));
+                Resources["Win11ToggleTrackUnchecked"] = new SolidColorBrush(Color.FromRgb(64, 64, 64));
+                Resources["Win11ToggleBorderUnchecked"] = new SolidColorBrush(Color.FromRgb(96, 96, 96));
+                Resources["Win11ToggleThumbUnchecked"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                Resources["Win11ToggleThumbChecked"] = new SolidColorBrush(Color.FromRgb(0, 0, 0));
             }
             else
             {
-                // Windows 11 Light Theme (Maximum contrast & crispness)
+                // Windows 11 Light Theme (Fluent Design contrast & crispness)
                 Resources["Win11WindowBg"] = new SolidColorBrush(Color.FromRgb(243, 243, 243));
                 Resources["Win11TitleBarBg"] = new SolidColorBrush(Color.FromRgb(234, 234, 234));
-                Resources["Win11WindowBorder"] = new SolidColorBrush(Color.FromRgb(220, 220, 220));
+                Resources["Win11WindowBorder"] = new SolidColorBrush(Color.FromRgb(212, 212, 212));
                 Resources["Win11CardBg"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                 Resources["Win11CardBorder"] = new SolidColorBrush(Color.FromRgb(229, 229, 229));
                 Resources["Win11Accent"] = new SolidColorBrush(Color.FromRgb(0, 95, 184));
+                Resources["Win11AccentForeground"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+                Resources["Win11AccentTint"] = new SolidColorBrush(Color.FromArgb(24, 0, 95, 184));
                 Resources["Win11TextPrimary"] = new SolidColorBrush(Color.FromRgb(26, 26, 26));
                 Resources["Win11TextSecondary"] = new SolidColorBrush(Color.FromRgb(94, 94, 94));
-                Resources["Win11TextMuted"] = new SolidColorBrush(Color.FromRgb(118, 118, 118));
+                Resources["Win11TextMuted"] = new SolidColorBrush(Color.FromRgb(120, 120, 120));
                 Resources["Win11SegmentedBg"] = new SolidColorBrush(Color.FromRgb(230, 230, 230));
                 Resources["Win11SegmentedActive"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                 Resources["Win11ProgressTrack"] = new SolidColorBrush(Color.FromRgb(235, 235, 235));
                 Resources["Win11ButtonBg"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
                 Resources["Win11ButtonBorder"] = new SolidColorBrush(Color.FromRgb(215, 215, 215));
+                Resources["Win11ToggleTrackUnchecked"] = new SolidColorBrush(Color.FromRgb(224, 224, 224));
+                Resources["Win11ToggleBorderUnchecked"] = new SolidColorBrush(Color.FromRgb(180, 180, 180));
+                Resources["Win11ToggleThumbUnchecked"] = new SolidColorBrush(Color.FromRgb(94, 94, 94));
+                Resources["Win11ToggleThumbChecked"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
             }
 
             foreach (var dev in _service.Devices)
@@ -207,6 +261,7 @@ namespace GHubWidget
                 dev.SetTheme(isDark);
             }
         }
+
         private void ThemeRadio_Changed(object sender, RoutedEventArgs e)
         {
             if (RadioThemeSystem == null || RadioThemeLight == null || RadioThemeDark == null) return;
@@ -249,48 +304,51 @@ namespace GHubWidget
 
         private void SetupTrayIcon()
         {
-            _trayIcon = new NotifyIcon();
-
             try
             {
                 var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                if (File.Exists(iconPath))
+                Icon icon = File.Exists(iconPath) ? new Icon(iconPath) : SystemIcons.Application;
+
+                _trayIcon = new NotifyIcon
                 {
-                    _trayIcon.Icon = new Icon(iconPath);
-                }
-                else
+                    Icon = icon,
+                    Visible = true,
+                    Text = "Logitech G HUB Widget"
+                };
+
+                _trayIcon.DoubleClick += (s, e) =>
                 {
-                    _trayIcon.Icon = SystemIcons.Application;
-                }
+                    Show();
+                    WindowState = WindowState.Normal;
+                    Activate();
+                };
+
+                var contextMenu = new ContextMenuStrip();
+                contextMenu.Items.Add("Abrir Widget", null, (s, e) =>
+                {
+                    Show();
+                    WindowState = WindowState.Normal;
+                    Activate();
+                });
+                contextMenu.Items.Add("Atualizar Dados", null, async (s, e) =>
+                {
+                    await _service.RefreshNowAsync();
+                });
+                contextMenu.Items.Add(new ToolStripSeparator());
+                contextMenu.Items.Add("Abrir Logitech G HUB", null, (s, e) =>
+                {
+                    LaunchGHub();
+                });
+                contextMenu.Items.Add(new ToolStripSeparator());
+                contextMenu.Items.Add("Sair", null, (s, e) =>
+                {
+                    _isExplicitExit = true;
+                    Close();
+                });
+
+                _trayIcon.ContextMenuStrip = contextMenu;
             }
-            catch
-            {
-                _trayIcon.Icon = SystemIcons.Application;
-            }
-
-            _trayIcon.Text = "Logitech G HUB Widget";
-            _trayIcon.Visible = true;
-            _trayIcon.DoubleClick += (s, e) => ShowAndRestore();
-
-            var menu = new ContextMenuStrip();
-            menu.Items.Add("Mostrar Widget", null, (s, e) => ShowAndRestore());
-            menu.Items.Add("Abrir Logitech G HUB", null, (s, e) => LaunchGHub());
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Sair do Widget", null, (s, e) =>
-            {
-                _isExplicitExit = true;
-                Close();
-            });
-
-            _trayIcon.ContextMenuStrip = menu;
-        }
-
-        private void ShowAndRestore()
-        {
-            Show();
-            WindowState = WindowState.Normal;
-            Activate();
-            ApplyWindowLayering();
+            catch { }
         }
 
         private void ApplyWindowLayering()
@@ -498,6 +556,8 @@ namespace GHubWidget
                 _trayIcon?.ShowBalloonTip(2000, "Logitech G HUB Widget", "O widget continua rodando na bandeja.", ToolTipIcon.Info);
                 return;
             }
+
+            SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
 
             _settings.WindowLeft = Left;
             _settings.WindowTop = Top;

@@ -6,6 +6,25 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
+## [1.1.2] - 2026-10-27
+
+### ✨ Adicionado & Aprimorado
+- **Troca Dinâmica de Tema do Windows em Tempo Real:**
+  - Implementado hook no `WndProc` para a mensagem nativa `WM_SETTINGCHANGE` (0x001A) e listener para `SystemEvents.UserPreferenceChanged`.
+  - Ao alternar entre modo Claro e Escuro nas Configurações do Windows 11, o widget se adapta instantaneamente em tempo real no modo "Sistema", sem necessidade de reiniciar o aplicativo.
+  - A detecção de tema do sistema (`IsSystemDarkTheme()`) agora avalia conjuntamente `SystemUsesLightTheme` (modo do Windows/barra de tarefas) e `AppsUseLightTheme` (modo dos aplicativos), garantindo compatibilidade total com o modo Personalizado do Windows 11.
+- **Melhorias de Contraste e Acessibilidade no Modo Claro:**
+  - Pílulas selecionadas e switches de alternância com cores de alto contraste dinâmico para garantir perfeita legibilidade sobre fundos claros.
+  - Ícone de status e badges ajustados com paleta Fluent 2.0 para temas claros.
+
+### 🐛 Corrigido
+- **Corte de Textos na Interface:**
+  - Largura da janela ajustada de 460px para 490px.
+  - Reestruturação em grid responsivo de 2 linhas nos cards "Tema de Aparência" e "Intervalo de Atualização", impedindo que os botões espremessem os títulos.
+  - Habilitada quebra automática de linha (`TextWrapping="Wrap"`) em todos os textos explicativos e subtítulos, eliminando truncamentos em telas de qualquer resolução ou escala de DPI.
+
+---
+
 ## [1.1.1] - 2026-10-27
 
 ### 🐛 Corrigido

@@ -1,8 +1,6 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 title Desinstalador - Logitech G HUB Widget
-cd /d "%~dp0"
-
 echo ============================================================
 echo   DESINSTALAR LOGITECH G HUB WIDGET
 echo ============================================================
@@ -19,7 +17,7 @@ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "LogitechGHub
 
 echo Removendo arquivos do programa e configuracoes...
 cd /d "%TEMP%"
-rmdir /s /q "%LOCALAPPDATA%\Programs\LogitechGHubWidget" >nul 2>&1
+rmdir /s /q "C:\Users\PC\AppData\Local\Programs\LogitechGHubWidget" >nul 2>&1
 rmdir /s /q "%LOCALAPPDATA%\LogitechGHubWidget" >nul 2>&1
 
 echo.

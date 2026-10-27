@@ -107,15 +107,26 @@ namespace GHubWidget.Models
                 using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", false);
                 if (key != null)
                 {
-                    var val = key.GetValue("AppsUseLightTheme");
-                    if (val is int intVal)
+                    var appsVal = key.GetValue("AppsUseLightTheme");
+                    var sysVal = key.GetValue("SystemUsesLightTheme");
+
+                    int appsInt = appsVal is int a ? a : -1;
+                    int sysInt = sysVal is int s ? s : -1;
+
+                    // Se qualquer uma das chaves indicar explicitamente modo claro (1), consideramos modo claro
+                    if (appsInt == 1 || sysInt == 1)
                     {
-                        return intVal == 0;
+                        return false;
+                    }
+
+                    if (appsInt == 0 || sysInt == 0)
+                    {
+                        return true;
                     }
                 }
             }
             catch { }
-            return true; // Default to dark on Windows 11
+            return true; // Padrão escuro
         }
     }
 }
