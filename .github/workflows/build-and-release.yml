@@ -49,7 +49,32 @@ jobs:
 
       - name: Generate Widget Release Zip Package
         run: |
-          Compress-Archive -Path 'build/widget/*', 'installer/*', 'Instalar-Widget.bat', 'Instalar-Com-Interface.bat', 'Desinstalar-Widget.bat', 'README.md', 'ghub-cli.py' -DestinationPath 'Logitech-GHub-Widget-Setup.zip' -Force
+          $pkg = 'build/package'
+          if (Test-Path $pkg) { Remove-Item $pkg -Recurse -Force }
+          New-Item -ItemType Directory -Path "$pkg/installer" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$pkg/build/widget" -Force | Out-Null
+
+          Get-ChildItem -Path 'build/widget' -File | Where-Object { $_.Extension -ne '.pdb' } | ForEach-Object {
+              Copy-Item $_.FullName -Destination "$pkg/build/widget" -Force
+              Copy-Item $_.FullName -Destination $pkg -Force
+          }
+
+          Copy-Item 'installer/*' -Destination "$pkg/installer" -Force
+          Copy-Item 'installer/Instalar-Widget.ps1' -Destination $pkg -Force
+          Copy-Item 'installer/Instalar-GUI.ps1' -Destination $pkg -Force
+
+          Copy-Item 'Instalar-Widget.bat' -Destination $pkg -Force
+          Copy-Item 'Instalar-Com-Interface.bat' -Destination $pkg -Force
+          Copy-Item 'Desinstalar-Widget.bat' -Destination $pkg -Force
+          if (Test-Path 'README.md') { Copy-Item 'README.md' -Destination $pkg -Force }
+          if (Test-Path 'CHANGELOG.md') { Copy-Item 'CHANGELOG.md' -Destination $pkg -Force }
+          if (Test-Path 'SECURITY.md') { Copy-Item 'SECURITY.md' -Destination $pkg -Force }
+          if (Test-Path 'LICENSE') { Copy-Item 'LICENSE' -Destination $pkg -Force }
+          if (Test-Path 'ghub-cli.py') { Copy-Item 'ghub-cli.py' -Destination $pkg -Force }
+
+          if (Test-Path 'Logitech-GHub-Widget-Setup.zip') { Remove-Item 'Logitech-GHub-Widget-Setup.zip' -Force }
+          Compress-Archive -Path "$pkg/*" -DestinationPath 'Logitech-GHub-Widget-Setup.zip' -Force
+          Remove-Item $pkg -Recurse -Force
 
       - name: Compute SHA256 Hashes
         id: compute_hash
