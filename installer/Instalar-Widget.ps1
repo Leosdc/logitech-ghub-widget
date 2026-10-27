@@ -31,17 +31,34 @@ if (Test-Path $officialGHubPath) {
 }
 
 # 2. Definir pastas de origem e destino
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sourceDir = Join-Path (Split-Path -Parent $scriptDir) "build\widget"
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 
-if (-not (Test-Path $sourceDir)) {
-    # Tenta usar pasta local se compilado no mesmo diretorio
-    $sourceDir = $scriptDir
+$candidateDirs = @(
+    (Join-Path (Split-Path -Parent $scriptDir) "build\widget"),
+    $scriptDir,
+    (Split-Path -Parent $scriptDir),
+    (Join-Path $scriptDir "build\widget"),
+    (Join-Path (Split-Path -Parent $scriptDir) "widget")
+)
+
+$sourceDir = $null
+foreach ($dir in $candidateDirs) {
+    if ($dir -and (Test-Path (Join-Path $dir "LogitechGHubWidget.exe"))) {
+        $sourceDir = (Resolve-Path $dir).Path
+        break
+    }
+}
+
+if (-not $sourceDir) {
+    Write-Host " [ERRO CRITICO] Nao foi possivel localizar 'LogitechGHubWidget.exe'." -ForegroundColor Red
+    Write-Host "                Verifique se o pacote foi descompactado completamente ou compile o projeto." -ForegroundColor Yellow
+    exit 1
 }
 
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\LogitechGHubWidget"
 Write-Host ""
 Write-Host " [*] Diretorio de instalacao: $installDir" -ForegroundColor Cyan
+Write-Host " [*] Origem dos binarios: $sourceDir" -ForegroundColor DarkGray
 
 # 3. Encerrar processo se ja estiver rodando
 $runningProc = Get-Process -Name "LogitechGHubWidget" -ErrorAction SilentlyContinue
@@ -55,13 +72,30 @@ if ($runningProc) {
 Write-Host " [*] Copiando arquivos do widget..." -ForegroundColor Cyan
 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 
-Get-ChildItem -Path $sourceDir -File -Exclude "*.pdb" | ForEach-Object {
-    Copy-Item -Path $_.FullName -Destination $installDir -Force
-    Write-Host "     + Copiado: $($_.Name)" -ForegroundColor DarkGray
+$filesToCopy = Get-ChildItem -Path $sourceDir -File | Where-Object { 
+    $_.Extension -ne ".pdb" -and $_.Extension -ne ".bat" -and $_.Extension -ne ".ps1" -and $_.Extension -ne ".md"
+}
+
+if (-not $filesToCopy -or $filesToCopy.Count -eq 0) {
+    Write-Host " [ERRO CRITICO] Nenhum arquivo para instalacao foi encontrado em: $sourceDir" -ForegroundColor Red
+    exit 1
+}
+
+$copiedCount = 0
+foreach ($file in $filesToCopy) {
+    Copy-Item -Path $file.FullName -Destination $installDir -Force
+    Write-Host "     + Copiado: $($file.Name)" -ForegroundColor DarkGray
+    $copiedCount++
 }
 
 $installedExe = Join-Path $installDir "LogitechGHubWidget.exe"
 $iconPath = Join-Path $installDir "icon.ico"
+
+if (-not (Test-Path $installedExe)) {
+    Write-Host " [ERRO CRITICO] O executavel '$installedExe' nao foi encontrado apos a copia." -ForegroundColor Red
+    exit 1
+}
+Write-Host " [OK] $copiedCount arquivos copiados com sucesso!" -ForegroundColor Green
 
 # 5. Criar Atalho na Area de Trabalho
 Write-Host " [*] Criando atalho na Area de Trabalho..." -ForegroundColor Cyan
@@ -93,7 +127,7 @@ Write-Host " [OK] Atalho criado no Menu Iniciar!" -ForegroundColor Green
 
 # 7. Criar script de desinstalacao limpa
 Write-Host " [*] Criando desinstalador..." -ForegroundColor Cyan
-$uninstallBatContent = @"
+$uninstallBatContent = @'
 @echo off
 chcp 65001 >nul
 title Desinstalador - Logitech G HUB Widget
@@ -113,7 +147,7 @@ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "LogitechGHub
 
 echo Removendo arquivos do programa e configuracoes...
 cd /d "%TEMP%"
-rmdir /s /q "$installDir" >nul 2>&1
+rmdir /s /q "%LOCALAPPDATA%\Programs\LogitechGHubWidget" >nul 2>&1
 rmdir /s /q "%LOCALAPPDATA%\LogitechGHubWidget" >nul 2>&1
 
 echo.
@@ -121,7 +155,7 @@ echo ============================================================
 echo   DESINSTALACAO CONCLUIDA COM SUCESSO!
 echo ============================================================
 pause
-"@
+'@
 
 $uninstallBatPath = Join-Path $installDir "Desinstalar.bat"
 $uninstallBatContent | Set-Content $uninstallBatPath -Encoding UTF8
@@ -162,8 +196,11 @@ Write-Host ""
 if (-not $Silent) {
     $openNow = Read-Host "Deseja iniciar o widget agora? (S/N) [Padrao: S]"
     if ($openNow -eq "" -or $openNow -match "^[sSyY]") {
-        Start-Process -FilePath $installedExe
-        Write-Host " [*] Widget iniciado!" -ForegroundColor Cyan
+        if (Test-Path $installedExe) {
+            Start-Process -FilePath $installedExe
+            Write-Host " [*] Widget iniciado!" -ForegroundColor Cyan
+        } else {
+            Write-Host " [AVISO] Nao foi possivel iniciar o widget: '$installedExe' nao encontrado." -ForegroundColor Yellow
+        }
     }
 }
-

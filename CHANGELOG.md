@@ -6,6 +6,17 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
+## [1.1.1] - 2026-10-27
+
+### 🐛 Corrigido
+- **Instalador no Windows PowerShell 5.1:** corrigida falha em `Instalar-Widget.ps1` e `Instalar-GUI.ps1` onde o cmdlet `Get-ChildItem -Exclude "*.pdb"` retornava 0 itens no PowerShell padrão do Windows, impedindo a cópia dos binários para `%LOCALAPPDATA%\Programs\LogitechGHubWidget` e gerando erro `Start-Process: O sistema não pode encontrar o arquivo especificado` (Issue #1).
+- **Detecção Resiliente dos Binários:** busca em múltiplos diretórios candidatos (`build/widget/`, raiz, diretório do script) para localizar `LogitechGHubWidget.exe`, tornando o instalador compatível tanto com o repositório clonado quanto com o pacote ZIP descompactado (com subpastas ou extração na raiz).
+- **Validação de Integridade na Instalação:** asserções explícitas antes de criar atalhos e antes de iniciar o aplicativo, emitindo mensagens de erro claras caso arquivos estejam ausentes antes de registrar no sistema.
+- **Empacotamento ZIP (`Criar-Pacote-Zip.bat`):** empacotamento com pasta de staging preservando a estrutura de pastas (`build/widget/`, `installer/`) e mantendo scripts executáveis e binários na raiz, garantindo funcionamento imediato pós-download em qualquer formato de extração.
+- **Desinstalador Portável:** substituído caminho absoluto por `%LOCALAPPDATA%\Programs\LogitechGHubWidget` dinâmico em `Desinstalar-Widget.bat`.
+
+---
+
 ## [1.1.0] - 2026-10-26
 
 ### ✨ Adicionado

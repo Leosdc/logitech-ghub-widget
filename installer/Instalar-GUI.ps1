@@ -4,9 +4,23 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $installDirDefault = Join-Path $env:LOCALAPPDATA "Programs\LogitechGHubWidget"
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sourceDir = Join-Path (Split-Path -Parent $scriptDir) "build\widget"
-if (-not (Test-Path $sourceDir)) { $sourceDir = $scriptDir }
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+
+$candidateDirs = @(
+    (Join-Path (Split-Path -Parent $scriptDir) "build\widget"),
+    $scriptDir,
+    (Split-Path -Parent $scriptDir),
+    (Join-Path $scriptDir "build\widget"),
+    (Join-Path (Split-Path -Parent $scriptDir) "widget")
+)
+
+$sourceDir = $null
+foreach ($dir in $candidateDirs) {
+    if ($dir -and (Test-Path (Join-Path $dir "LogitechGHubWidget.exe"))) {
+        $sourceDir = (Resolve-Path $dir).Path
+        break
+    }
+}
 
 # Form Setup
 $form = New-Object System.Windows.Forms.Form
@@ -20,9 +34,11 @@ $form.BackColor = [System.Drawing.Color]::FromArgb(24, 25, 34)
 $form.ForeColor = [System.Drawing.Color]::White
 
 # Icon if present
-$iconSrc = Join-Path $sourceDir "icon.ico"
-if (Test-Path $iconSrc) {
-    try { $form.Icon = New-Object System.Drawing.Icon($iconSrc) } catch {}
+if ($sourceDir) {
+    $iconSrc = Join-Path $sourceDir "icon.ico"
+    if (Test-Path $iconSrc) {
+        try { $form.Icon = New-Object System.Drawing.Icon($iconSrc) } catch {}
+    }
 }
 
 # Header Panel
@@ -41,105 +57,101 @@ $lblLogo.Size = New-Object System.Drawing.Size(40, 45)
 $header.Controls.Add($lblLogo)
 
 $lblTitle = New-Object System.Windows.Forms.Label
-$lblTitle.Text = "LOGITECH G HUB WIDGET"
-$lblTitle.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+$lblTitle.Text = "Logitech G HUB Widget"
+$lblTitle.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
 $lblTitle.ForeColor = [System.Drawing.Color]::White
-$lblTitle.Location = New-Object System.Drawing.Point(68, 20)
-$lblTitle.Size = New-Object System.Drawing.Size(420, 24)
+$lblTitle.Location = New-Object System.Drawing.Point(68, 16)
+$lblTitle.Size = New-Object System.Drawing.Size(350, 28)
 $header.Controls.Add($lblTitle)
 
 $lblSubtitle = New-Object System.Windows.Forms.Label
-$lblSubtitle.Text = "Instalador do Widget de Bateria & Monitor para Windows 11"
+$lblSubtitle.Text = "Monitor de bateria elegante e nao invasivo para Windows 11"
 $lblSubtitle.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $lblSubtitle.ForeColor = [System.Drawing.Color]::FromArgb(140, 150, 170)
-$lblSubtitle.Location = New-Object System.Drawing.Point(68, 44)
+$lblSubtitle.Location = New-Object System.Drawing.Point(70, 44)
 $lblSubtitle.Size = New-Object System.Drawing.Size(420, 20)
 $header.Controls.Add($lblSubtitle)
 
-# Safe Notice
-$lblNotice = New-Object System.Windows.Forms.Label
-$lblNotice.Text = "[100% Seguro] Nenhum arquivo original do G HUB em C:\Program Files sera alterado."
-$lblNotice.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-$lblNotice.ForeColor = [System.Drawing.Color]::FromArgb(16, 185, 129)
-$lblNotice.Location = New-Object System.Drawing.Point(24, 100)
-$lblNotice.Size = New-Object System.Drawing.Size(470, 26)
-$form.Controls.Add($lblNotice)
-
-# Destination Folder Group
-$lblDest = New-Object System.Windows.Forms.Label
-$lblDest.Text = "Pasta de Instalacao:"
-$lblDest.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-$lblDest.ForeColor = [System.Drawing.Color]::FromArgb(210, 215, 230)
-$lblDest.Location = New-Object System.Drawing.Point(24, 132)
-$lblDest.Size = New-Object System.Drawing.Size(200, 20)
-$form.Controls.Add($lblDest)
+# Group: Path
+$grpPath = New-Object System.Windows.Forms.GroupBox
+$grpPath.Text = " Pasta de Instalacao "
+$grpPath.Location = New-Object System.Drawing.Point(24, 100)
+$grpPath.Size = New-Object System.Drawing.Size(465, 75)
+$grpPath.ForeColor = [System.Drawing.Color]::FromArgb(180, 190, 210)
+$form.Controls.Add($grpPath)
 
 $txtDest = New-Object System.Windows.Forms.TextBox
 $txtDest.Text = $installDirDefault
-$txtDest.Location = New-Object System.Drawing.Point(24, 154)
-$txtDest.Size = New-Object System.Drawing.Size(370, 25)
-$txtDest.BackColor = [System.Drawing.Color]::FromArgb(35, 37, 50)
+$txtDest.Location = New-Object System.Drawing.Point(16, 30)
+$txtDest.Size = New-Object System.Drawing.Size(330, 24)
+$txtDest.BackColor = [System.Drawing.Color]::FromArgb(32, 34, 46)
 $txtDest.ForeColor = [System.Drawing.Color]::White
 $txtDest.BorderStyle = "FixedSingle"
-$form.Controls.Add($txtDest)
+$grpPath.Controls.Add($txtDest)
 
 $btnBrowse = New-Object System.Windows.Forms.Button
 $btnBrowse.Text = "Procurar..."
-$btnBrowse.Location = New-Object System.Drawing.Point(404, 153)
-$btnBrowse.Size = New-Object System.Drawing.Size(85, 27)
-$btnBrowse.BackColor = [System.Drawing.Color]::FromArgb(40, 42, 56)
+$btnBrowse.Location = New-Object System.Drawing.Point(355, 28)
+$btnBrowse.Size = New-Object System.Drawing.Size(95, 27)
+$btnBrowse.BackColor = [System.Drawing.Color]::FromArgb(45, 48, 64)
 $btnBrowse.ForeColor = [System.Drawing.Color]::White
-$btnBrowse.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $btnBrowse.FlatStyle = "Flat"
 $btnBrowse.FlatAppearance.BorderSize = 0
 $btnBrowse.Cursor = [System.Windows.Forms.Cursors]::Hand
 $btnBrowse.Add_Click({
     $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
-    $fbd.Description = "Selecione a pasta para instalar o Logitech G HUB Widget:"
-    if (Test-Path $txtDest.Text) { $fbd.SelectedPath = $txtDest.Text }
+    $fbd.Description = "Selecione a pasta onde deseja instalar o widget"
+    $fbd.SelectedPath = $txtDest.Text
     if ($fbd.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
         $txtDest.Text = $fbd.SelectedPath
     }
 })
-$form.Controls.Add($btnBrowse)
+$grpPath.Controls.Add($btnBrowse)
 
-# Checkboxes Options
+# Group: Options
+$grpOptions = New-Object System.Windows.Forms.GroupBox
+$grpOptions.Text = " Opcoes de Instalacao "
+$grpOptions.Location = New-Object System.Drawing.Point(24, 185)
+$grpOptions.Size = New-Object System.Drawing.Size(465, 125)
+$grpOptions.ForeColor = [System.Drawing.Color]::FromArgb(180, 190, 210)
+$form.Controls.Add($grpOptions)
+
 $chkDesktop = New-Object System.Windows.Forms.CheckBox
 $chkDesktop.Text = "Criar atalho na Area de Trabalho"
 $chkDesktop.Checked = $true
-$chkDesktop.Location = New-Object System.Drawing.Point(26, 195)
-$chkDesktop.Size = New-Object System.Drawing.Size(320, 24)
-$chkDesktop.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
-$form.Controls.Add($chkDesktop)
+$chkDesktop.Location = New-Object System.Drawing.Point(20, 28)
+$chkDesktop.Size = New-Object System.Drawing.Size(380, 22)
+$chkDesktop.ForeColor = [System.Drawing.Color]::White
+$grpOptions.Controls.Add($chkDesktop)
 
 $chkStartMenu = New-Object System.Windows.Forms.CheckBox
-$chkStartMenu.Text = "Adicionar ao Menu Iniciar do Windows"
+$chkStartMenu.Text = "Criar atalho no Menu Iniciar"
 $chkStartMenu.Checked = $true
-$chkStartMenu.Location = New-Object System.Drawing.Point(26, 225)
-$chkStartMenu.Size = New-Object System.Drawing.Size(320, 24)
-$chkStartMenu.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
-$form.Controls.Add($chkStartMenu)
+$chkStartMenu.Location = New-Object System.Drawing.Point(20, 52)
+$chkStartMenu.Size = New-Object System.Drawing.Size(380, 22)
+$chkStartMenu.ForeColor = [System.Drawing.Color]::White
+$grpOptions.Controls.Add($chkStartMenu)
 
 $chkAutoStart = New-Object System.Windows.Forms.CheckBox
-$chkAutoStart.Text = "Iniciar automaticamente ao ligar o computador"
+$chkAutoStart.Text = "Iniciar automaticamente com o Windows"
 $chkAutoStart.Checked = $true
-$chkAutoStart.Location = New-Object System.Drawing.Point(26, 255)
-$chkAutoStart.Size = New-Object System.Drawing.Size(350, 24)
-$chkAutoStart.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
-$form.Controls.Add($chkAutoStart)
+$chkAutoStart.Location = New-Object System.Drawing.Point(20, 76)
+$chkAutoStart.Size = New-Object System.Drawing.Size(380, 22)
+$chkAutoStart.ForeColor = [System.Drawing.Color]::White
+$grpOptions.Controls.Add($chkAutoStart)
 
 $chkLaunchNow = New-Object System.Windows.Forms.CheckBox
-$chkLaunchNow.Text = "Abrir o widget imediatamente apos a instalacao"
+$chkLaunchNow.Text = "Iniciar o widget apos concluir a instalacao"
 $chkLaunchNow.Checked = $true
-$chkLaunchNow.Location = New-Object System.Drawing.Point(26, 285)
-$chkLaunchNow.Size = New-Object System.Drawing.Size(350, 24)
-$chkLaunchNow.Font = New-Object System.Drawing.Font("Segoe UI", 9.5)
-$form.Controls.Add($chkLaunchNow)
+$chkLaunchNow.Location = New-Object System.Drawing.Point(20, 100)
+$chkLaunchNow.Size = New-Object System.Drawing.Size(380, 22)
+$chkLaunchNow.ForeColor = [System.Drawing.Color]::White
+$grpOptions.Controls.Add($chkLaunchNow)
 
 # Progress Bar
 $progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = New-Object System.Drawing.Point(24, 325)
-$progressBar.Size = New-Object System.Drawing.Size(465, 12)
+$progressBar.Location = New-Object System.Drawing.Point(24, 320)
+$progressBar.Size = New-Object System.Drawing.Size(465, 18)
 $progressBar.Style = "Continuous"
 $form.Controls.Add($progressBar)
 
@@ -221,6 +233,13 @@ $btnInstall.Add_Click({
         return
     }
 
+    if (-not $sourceDir -or -not (Test-Path (Join-Path $sourceDir "LogitechGHubWidget.exe"))) {
+        [System.Windows.Forms.MessageBox]::Show($form, "Nao foi possivel localizar 'LogitechGHubWidget.exe'. Verifique se todos os arquivos foram extraidos.", "Erro de Instalacao", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        $btnInstall.Enabled = $true
+        $txtDest.Enabled = $true
+        return
+    }
+
     $lblStatus.Text = "Verificando processos e preparando diretorio..."
     $progressBar.Value = 20
     $form.Refresh()
@@ -234,8 +253,27 @@ $btnInstall.Add_Click({
     $form.Refresh()
 
     New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
-    Get-ChildItem -Path $sourceDir -File -Exclude "*.pdb" | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $targetDir -Force
+    $filesToCopy = Get-ChildItem -Path $sourceDir -File | Where-Object { 
+        $_.Extension -ne ".pdb" -and $_.Extension -ne ".bat" -and $_.Extension -ne ".ps1" -and $_.Extension -ne ".md"
+    }
+
+    if (-not $filesToCopy -or $filesToCopy.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show($form, "Nenhum arquivo para instalacao foi encontrado em: $sourceDir", "Erro de Instalacao", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        $btnInstall.Enabled = $true
+        $txtDest.Enabled = $true
+        return
+    }
+
+    foreach ($file in $filesToCopy) {
+        Copy-Item -Path $file.FullName -Destination $targetDir -Force
+    }
+
+    $exePath = Join-Path $targetDir "LogitechGHubWidget.exe"
+    if (-not (Test-Path $exePath)) {
+        [System.Windows.Forms.MessageBox]::Show($form, "O executavel '$exePath' nao foi encontrado apos a copia.", "Erro de Instalacao", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        $btnInstall.Enabled = $true
+        $txtDest.Enabled = $true
+        return
     }
 
     # Gerar script de desinstalacao limpa associado a pasta escolhida
@@ -286,7 +324,6 @@ pause
     $lblStatus.Text = "Criando atalhos e configuracoes..."
     $form.Refresh()
 
-    $exePath = Join-Path $targetDir "LogitechGHubWidget.exe"
     $iconPath = Join-Path $targetDir "icon.ico"
     $wsh = New-Object -ComObject WScript.Shell
 
@@ -318,7 +355,9 @@ pause
     $form.Refresh()
 
     if ($chkLaunchNow.Checked) {
-        Start-Process -FilePath $exePath
+        if (Test-Path $exePath) {
+            Start-Process -FilePath $exePath
+        }
     }
 
     [System.Windows.Forms.MessageBox]::Show($form, "O Logitech G HUB Widget foi instalado com sucesso!`n`nNenhum arquivo oficial foi modificado.", "Instalacao Concluida", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
