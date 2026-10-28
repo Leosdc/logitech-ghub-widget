@@ -10,8 +10,9 @@ Recebem atualizações de segurança e correções:
 
 | Versão | Suporte | Notas |
 |:---|:---:|:---|
-| **v1.1.x** | ✅ Suportado | Versão atual (Widget Fluent WinUI 3 + CLI multiplataforma + extensão GNOME Shell 46). |
-| **v1.0.x** | ⚠️ Parcial | Apenas patches críticos de segurança. Recomenda-se migrar para v1.1.x. |
+| **v1.2.x** | ✅ Suportado | Versão atual (Widget Fluent WinUI 3 + CLI multiplataforma + extensão GNOME Shell 46). |
+| **v1.1.x** | ✅ Suportado | Widget Fluent WinUI 3 + CLI multiplataforma. |
+| **v1.0.x** | ⚠️ Parcial | Apenas patches críticos de segurança. Recomenda-se migrar para v1.2.x. |
 | < v1.0.0 | ❌ Descontinuado | Versões de desenvolvimento pré-lançamento. |
 
 ---

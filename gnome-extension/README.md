@@ -1,5 +1,7 @@
 # 🔋 Logitech G Battery — extensão para GNOME Shell (Ubuntu 24.04)
 
+> **Autor da versão Ubuntu/GNOME:** **[@vinipy12](https://github.com/vinipy12)** (*Vinicius Cavalcante*) — [PR #2](https://github.com/Leosdc/logitech-ghub-widget/pull/2)
+
 Mostra a bateria dos seus periféricos Logitech G na barra superior do GNOME,
 um item por dispositivo, com cores âmbar (≤ 50%) e vermelha (≤ 20%) e uma
 notificação quando um dispositivo cai para 20% ou menos.
@@ -159,6 +161,3 @@ Em um Shell real, o estado interno pode ser inspecionado pelo Looking Glass
 ```js
 imports.ui.main.extensionManager.lookup('ghub-battery@vinipy12.github.io').stateObj
 ```
-
-O design e o plano de implementação estão em
-[`docs/superpowers/`](../docs/superpowers/).

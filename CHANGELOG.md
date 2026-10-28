@@ -6,10 +6,10 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
-## [Unreleased]
+## [1.2.0] - 2026-10-28
 
 ### ✨ Adicionado
-- **Extensão para GNOME Shell 46 / Ubuntu 24.04 (`gnome-extension/`):** interface para Linux, onde o agente do G HUB não existe.
+- **Extensão para GNOME Shell 46 / Ubuntu 24.04 (`gnome-extension/`)** — desenvolvida e contribuída por **[@vinipy12](https://github.com/vinipy12)** (*Vinicius Cavalcante*, [PR #2](https://github.com/Leosdc/logitech-ghub-widget/pull/2)): interface nativa para Linux, onde o agente do G HUB não existe.
   - **Fonte de dados UPower via D-Bus:** lê os periféricos Logitech expostos pelo kernel (`hid-logitech-hidpp`, receptor Lightspeed) e pelo BlueZ (Bluetooth), sem G HUB, sem processo auxiliar e sem polling (GJS puro, ESM).
   - **Um item por periférico na barra superior**, ordenados por tipo (mouse, teclado, headset, controle). Porcentagem exata quando o UPower confia no valor; nível (`Cheia`, `Alta`, `Normal`, `Baixa`, `Crítica`) para dispositivos que só informam faixas (ex.: G305 pelo receptor). Prefixo `⚡` enquanto carrega.
   - **Cores de alerta:** âmbar em 50% ou menos, vermelho em 20% ou menos. Dispositivos dormindo/desconectados saem da barra e ficam em cinza no menu como *Inativo*.

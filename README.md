@@ -12,7 +12,7 @@ Um widget moderno com interface nativa **Windows 11 Fluent 2.0 (WinUI 3)** para 
 
 A partir da **v1.1.0**, também há uma **versão de terminal (CLI)** que mostra os mesmos dados em uma tela de prompt atualizada em tempo real. Ela funciona no Windows, macOS e Linux.
 
-Para **Ubuntu com GNOME**, onde o G HUB não existe, há uma **extensão para a barra superior** (`gnome-extension/`) que lê a bateria dos periféricos direto do UPower, sem precisar do G HUB nem de outra máquina.
+Para **Ubuntu com GNOME**, onde o G HUB não existe, há uma **extensão para a barra superior** (`gnome-extension/`, desenvolvida por **[@vinipy12](https://github.com/vinipy12)**) que lê a bateria dos periféricos direto do UPower, sem precisar do G HUB nem de outra máquina.
 
 📋 [Changelog](CHANGELOG.md) · 🔒 [Política de Segurança](SECURITY.md) · 💻 [Documentação do CLI](cli/README.md) · 🐧 [Extensão GNOME](gnome-extension/README.md)
 
@@ -69,6 +69,8 @@ Detalhes completos do modelo de segurança e como reportar vulnerabilidades: **[
 ---
 
 ## 🐧 Ubuntu / GNOME: extensão para a barra superior
+
+> **Créditos:** Extensão para Ubuntu / GNOME Shell 46 construída e contribuída por **[@vinipy12](https://github.com/vinipy12)** (*Vinicius Cavalcante*) no [PR #2](https://github.com/Leosdc/logitech-ghub-widget/pull/2).
 
 No Linux não existe o agente do G HUB, mas o Ubuntu já expõe a bateria dos
 periféricos Logitech pelo **UPower** (receptor Lightspeed via driver
@@ -242,6 +244,13 @@ pwsh ./cli/build-cross-platform.ps1
 # Extensão GNOME (testes + zip instalável)
 make -C gnome-extension test pack
 ```
+
+---
+
+## 🤝 Créditos e Contribuidores
+
+- **[@Leosdc](https://github.com/Leosdc)** — Criador e mantenedor do projeto (Widget Windows 11 WinUI 3 e CLI multiplataforma).
+- **[@vinipy12](https://github.com/vinipy12)** (*Vinicius Cavalcante*) — Autor da versão **Ubuntu / GNOME Shell 46** ([`gnome-extension/`](gnome-extension/README.md), [PR #2](https://github.com/Leosdc/logitech-ghub-widget/pull/2)).
 
 ---
 
