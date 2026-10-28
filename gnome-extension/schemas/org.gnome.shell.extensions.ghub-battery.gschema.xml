@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="ghub-battery">
+  <schema id="org.gnome.shell.extensions.ghub-battery" path="/org/gnome/shell/extensions/ghub-battery/">
+    <key name="notify-low" type="b">
+      <default>true</default>
+      <summary>Notificar bateria fraca</summary>
+      <description>Envia uma notificação quando um dispositivo cai para 20% ou menos.</description>
+    </key>
+    <key name="show-inactive" type="b">
+      <default>true</default>
+      <summary>Mostrar dispositivos inativos no menu</summary>
+      <description>Mantém dispositivos desligados ou desconectados listados no menu, em cinza.</description>
+    </key>
+  </schema>
+</schemalist>
