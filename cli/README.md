@@ -32,7 +32,7 @@ Versão de linha de comando (terminal / prompt) do **Logitech G HUB Widget**. Mo
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-> **ℹ️ Requisito:** o CLI lê os dados do agente local do **Logitech G HUB**, que existe apenas para **Windows e macOS**. No Linux, conecte-se a um G HUB em outra máquina (veja [Usando a partir de outra máquina](#-usando-a-partir-de-outra-máquina-linux)).
+> **ℹ️ Requisito:** o CLI lê os dados do agente local do **Logitech G HUB**, que existe apenas para **Windows e macOS**. No Linux, conecte-se a um G HUB em outra máquina (veja [Usando a partir de outra máquina](#-usando-a-partir-de-outra-máquina-linux)). Se você usa **Ubuntu com GNOME**, a [extensão para a barra superior](../gnome-extension/README.md) mostra a bateria direto do UPower, sem precisar de G HUB.
 
 ---
 

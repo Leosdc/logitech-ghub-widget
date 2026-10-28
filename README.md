@@ -1,7 +1,8 @@
-# ⚡ Logitech G HUB Battery Widget (Windows 11 + CLI multiplataforma)
+# ⚡ Logitech G HUB Battery Widget (Windows 11 + Ubuntu/GNOME + CLI multiplataforma)
 
 [![Windows 11](https://img.shields.io/badge/Windows-11%20Fluent-0078D4?style=flat&logo=windows11&logoColor=white)](https://github.com/Leosdc/logitech-ghub-widget)
 [![CLI](https://img.shields.io/badge/CLI-Windows%20%7C%20macOS%20%7C%20Linux-333333?style=flat&logo=gnubash&logoColor=white)](cli/README.md)
+[![GNOME Shell 46](https://img.shields.io/badge/GNOME%20Shell-46%20(Ubuntu%2024.04)-4A86CF?style=flat&logo=gnome&logoColor=white)](gnome-extension/README.md)
 [![.NET](https://img.shields.io/badge/.NET-10.0%20%7C%208.0-512BD4?style=flat&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-3776AB?style=flat&logo=python&logoColor=white)](https://python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,7 +12,9 @@ Um widget moderno com interface nativa **Windows 11 Fluent 2.0 (WinUI 3)** para 
 
 A partir da **v1.1.0**, também há uma **versão de terminal (CLI)** que mostra os mesmos dados em uma tela de prompt atualizada em tempo real. Ela funciona no Windows, macOS e Linux.
 
-📋 [Changelog](CHANGELOG.md) · 🔒 [Política de Segurança](SECURITY.md) · 💻 [Documentação do CLI](cli/README.md)
+Para **Ubuntu com GNOME**, onde o G HUB não existe, há uma **extensão para a barra superior** (`gnome-extension/`) que lê a bateria dos periféricos direto do UPower, sem precisar do G HUB nem de outra máquina.
+
+📋 [Changelog](CHANGELOG.md) · 🔒 [Política de Segurança](SECURITY.md) · 💻 [Documentação do CLI](cli/README.md) · 🐧 [Extensão GNOME](gnome-extension/README.md)
 
 ---
 
@@ -20,6 +23,7 @@ A partir da **v1.1.0**, também há uma **versão de terminal (CLI)** que mostra
 - **A pasta oficial do Logitech G HUB (`C:\Program Files\LGHUB`) NÃO é modificada.**
 - Nenhum arquivo executável, biblioteca `.dll`, driver ou recurso oficial é alterado ou substituído.
 - O widget e o CLI atuam exclusivamente como clientes locais da porta WebSocket oficial do agente do G HUB (`ws://127.0.0.1:9010`), enviando **apenas consultas de leitura** (lista de dispositivos e estado da bateria).
+- A extensão GNOME lê **apenas propriedades do UPower** pelo D-Bus do sistema (`org.freedesktop.UPower`), não abre rede, não executa processos auxiliares e é instalada no escopo do usuário (`~/.local/share/gnome-shell/extensions`).
 - **Zero telemetria:** nenhum dado sai do seu computador.
 - Atualizações oficiais do Logitech G HUB continuam funcionando normalmente.
 - O widget é instalado em `%LOCALAPPDATA%\Programs\LogitechGHubWidget`, sem requerer privilégios administrativos e sem deixar resíduos no sistema.
@@ -67,10 +71,41 @@ Detalhes completos do modelo de segurança e como reportar vulnerabilidades: **[
 ## 🐧 Ubuntu / GNOME: extensão para a barra superior
 
 No Linux não existe o agente do G HUB, mas o Ubuntu já expõe a bateria dos
-periféricos Logitech pelo UPower. A pasta **[`gnome-extension/`](gnome-extension/README.md)**
-traz uma extensão para GNOME Shell 46 (Ubuntu 24.04) que mostra um item por
-dispositivo na barra superior, com cores de alerta e notificação de bateria
-fraca. Instalação: `cd gnome-extension && make install`. Depois, reinicie o Shell (X11: Alt+F2, r, Enter; Wayland: encerre e reabra a sessão) e rode `gnome-extensions enable ghub-battery@vinipy12.github.io`; passos completos no README da extensão.
+periféricos Logitech pelo **UPower** (receptor Lightspeed via driver
+`hid-logitech-hidpp` do kernel; Bluetooth via BlueZ). A pasta
+**[`gnome-extension/`](gnome-extension/README.md)** traz uma extensão para
+**GNOME Shell 46 (Ubuntu 24.04)** que mostra um item por dispositivo na barra
+superior.
+
+- 🖱 ⌨ 🎧 **Um item por periférico ativo**, ordenados por tipo (mouse, teclado, headset, controle).
+- 🔋 **Porcentagem exata** (`36%`) quando o UPower confia no valor; **nível** (`Cheia`, `Alta`, `Normal`, `Baixa`, `Crítica`) quando o dispositivo só informa faixas, como o G305 pelo receptor. `⚡` enquanto carrega.
+- 🟡 **Âmbar** em 50% ou menos, 🔴 **vermelho** em 20% ou menos; cor neutra acima disso.
+- 😴 Dispositivos dormindo ou desconectados **saem da barra** e ficam em cinza no menu como *Inativo*.
+- 🔔 **Uma notificação do GNOME** por dispositivo cada vez que ele cai para 20% ou menos, rearmada quando recupera.
+- ⚙️ **Preferências:** ligar/desligar a notificação e ocultar inativos do menu.
+- 🧩 **Sem processo em segundo plano nem polling:** GJS puro, reagindo a sinais D-Bus do UPower.
+
+### Instalação
+
+```bash
+# a partir do pacote da release
+gnome-extensions install -f ghub-battery@vinipy12.github.io.shell-extension.zip
+
+# ou a partir do código-fonte
+cd gnome-extension && make install
+```
+
+Na primeira instalação, reinicie o Shell (X11: `Alt+F2`, `r`, Enter; Wayland:
+encerre e reabra a sessão) e ative:
+
+```bash
+gnome-extensions enable ghub-battery@vinipy12.github.io
+```
+
+Para remover: `gnome-extensions uninstall ghub-battery@vinipy12.github.io`.
+
+Requisitos, limitações (sem mW nem horas restantes; o G305 só informa nível),
+solução de problemas e comandos de desenvolvimento: **[gnome-extension/README.md](gnome-extension/README.md)**.
 
 ---
 
@@ -115,7 +150,7 @@ O **Logitech G HUB CLI Monitor** mostra os seus periféricos numa tela de termin
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-> **ℹ️ Onde o G HUB roda:** o Logitech G HUB existe para **Windows e macOS**. No Linux não há G HUB, então o CLI precisa se conectar a um G HUB rodando em outra máquina. A forma segura de fazer isso é um túnel SSH (veja [cli/README.md](cli/README.md#-usando-a-partir-de-outra-máquina-linux)).
+> **ℹ️ Onde o G HUB roda:** o Logitech G HUB existe para **Windows e macOS**. No Linux não há G HUB, então o CLI precisa se conectar a um G HUB rodando em outra máquina. A forma segura de fazer isso é um túnel SSH (veja [cli/README.md](cli/README.md#-usando-a-partir-de-outra-máquina-linux)). Se o seu Linux é um **Ubuntu com GNOME**, prefira a [extensão para a barra superior](#-ubuntu--gnome-extensão-para-a-barra-superior), que não depende do G HUB.
 
 ### Como executar
 
@@ -167,11 +202,13 @@ Para remover o aplicativo de forma 100% limpa:
 
 O CLI não instala nada nem grava arquivos: basta apagar o executável ou o script.
 
+A extensão GNOME é removida com `gnome-extensions uninstall ghub-battery@vinipy12.github.io` (apaga `~/.local/share/gnome-shell/extensions/ghub-battery@vinipy12.github.io`). As duas preferências ficam no dconf em `/org/gnome/shell/extensions/ghub-battery/` e podem ser zeradas com `dconf reset -f /org/gnome/shell/extensions/ghub-battery/`.
+
 ---
 
 ## 🔍 Verificação de Integridade (SHA-256)
 
-Cada release publica um arquivo **`SHA256SUMS.txt`** com os hashes de todos os arquivos (pacote do widget, binários do CLI e `ghub-cli.py`), gerado automaticamente pelo **GitHub Actions** a partir deste código-fonte.
+Cada release publica um arquivo **`SHA256SUMS.txt`** com os hashes de todos os arquivos (pacote do widget, binários do CLI, `ghub-cli.py` e o `.shell-extension.zip` da extensão GNOME), gerado automaticamente pelo **GitHub Actions** a partir deste código-fonte.
 
 ```powershell
 # Windows (PowerShell)
@@ -191,6 +228,7 @@ Compare o resultado com a linha correspondente em `SHA256SUMS.txt`. Os hashes mu
 ### Pré-requisitos
 - Widget: Windows 10/11 (x64) e [.NET SDK 10.0](https://dotnet.microsoft.com/)
 - CLI: .NET SDK 8.0 ou superior (qualquer SO) — ou apenas Python 3.7+ para o script
+- Extensão GNOME: `gjs`, `libglib2.0-bin` (para `glib-compile-schemas`) e `gir1.2-upowerglib-1.0` — tudo em `apt`; o comando `gnome-extensions` já vem com o `gnome-shell`
 
 ### Comandos
 ```bash
@@ -200,6 +238,9 @@ dotnet publish src/GHubWidget.csproj -c Release -o build/widget
 
 # CLI para todas as plataformas (gera build/cli/<plataforma>/)
 pwsh ./cli/build-cross-platform.ps1
+
+# Extensão GNOME (testes + zip instalável)
+make -C gnome-extension test pack
 ```
 
 ---

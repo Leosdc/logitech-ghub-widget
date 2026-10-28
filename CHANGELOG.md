@@ -9,7 +9,15 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 ## [Unreleased]
 
 ### ✨ Adicionado
-- Extensão para GNOME Shell 46 (`gnome-extension/`): bateria dos periféricos na barra superior via UPower, cores âmbar/vermelha, notificação 20% ou menos, preferências.
+- **Extensão para GNOME Shell 46 / Ubuntu 24.04 (`gnome-extension/`):** interface para Linux, onde o agente do G HUB não existe.
+  - **Fonte de dados UPower via D-Bus:** lê os periféricos Logitech expostos pelo kernel (`hid-logitech-hidpp`, receptor Lightspeed) e pelo BlueZ (Bluetooth), sem G HUB, sem processo auxiliar e sem polling (GJS puro, ESM).
+  - **Um item por periférico na barra superior**, ordenados por tipo (mouse, teclado, headset, controle). Porcentagem exata quando o UPower confia no valor; nível (`Cheia`, `Alta`, `Normal`, `Baixa`, `Crítica`) para dispositivos que só informam faixas (ex.: G305 pelo receptor). Prefixo `⚡` enquanto carrega.
+  - **Cores de alerta:** âmbar em 50% ou menos, vermelho em 20% ou menos. Dispositivos dormindo/desconectados saem da barra e ficam em cinza no menu como *Inativo*.
+  - **Notificação de bateria fraca:** uma por dispositivo a cada vez que cruza 20% ou menos, rearmada ao recuperar; o estado sobrevive a bloqueio/desbloqueio de tela.
+  - **Preferências** (`notify-low`, `show-inactive`) em janela Adwaita.
+  - **Cliente D-Bus robusto:** assina os sinais antes de enumerar e usa contador de geração + tokens por caminho, de modo que uma resposta atrasada não ressuscita um dispositivo removido; snapshots autoritativos para sobreviver a reinícios do UPower. Coberto por testes puros (`make test`), teste de corrida determinístico e teste contra o UPower real (`make test-live`).
+  - **Empacotamento e release:** `make pack` gera `ghub-battery@vinipy12.github.io.shell-extension.zip`; novo job `pack-extension` no GitHub Actions roda os testes, gera o zip e o inclui no `SHA256SUMS.txt` e nos assets da release.
+  - **Documentação:** `gnome-extension/README.md` (instalação, preferências, limitações, solução de problemas), seção "🐧 Ubuntu / GNOME" no README raiz e seção 6 em `SECURITY.md`.
 
 ---
 
