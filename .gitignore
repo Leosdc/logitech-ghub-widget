@@ -22,3 +22,5 @@ settings.json
 # Python
 __pycache__/
 *.pyc
+gnome-extension/schemas/gschemas.compiled
+gnome-extension/*.shell-extension.zip

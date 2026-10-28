@@ -12,9 +12,49 @@ permissions:
   contents: write
 
 jobs:
+  pack-extension:
+    name: Pack GNOME extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-bin zip gjs gir1.2-upowerglib-1.0
+
+      - name: Unit tests
+        working-directory: gnome-extension
+        run: gjs -m tests/run.js
+
+      - name: Race test
+        working-directory: gnome-extension
+        run: gjs -m tests/upowerSource.race.test.js
+
+      - name: Compile schemas
+        run: glib-compile-schemas --strict gnome-extension/schemas/
+
+      - name: Build zip (same layout as gnome-extensions pack; timestamps differ)
+        working-directory: gnome-extension
+        run: |
+          zip -r "../ghub-battery@vinipy12.github.io.shell-extension.zip" \
+            metadata.json extension.js prefs.js stylesheet.css \
+            upowerSource.js model.js panelItem.js menu.js notifier.js \
+            schemas/org.gnome.shell.extensions.ghub-battery.gschema.xml schemas/gschemas.compiled
+          unzip -l "../ghub-battery@vinipy12.github.io.shell-extension.zip"
+          for f in metadata.json extension.js prefs.js stylesheet.css upowerSource.js model.js panelItem.js menu.js notifier.js schemas/org.gnome.shell.extensions.ghub-battery.gschema.xml schemas/gschemas.compiled; do
+            unzip -l "../ghub-battery@vinipy12.github.io.shell-extension.zip" | grep -q " $f$" || { echo "MISSING $f"; exit 1; }
+          done
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnome-extension
+          path: ghub-battery@vinipy12.github.io.shell-extension.zip
+
   build:
     name: Build & Package Release
     runs-on: windows-latest
+    needs: pack-extension
 
     steps:
       - name: Checkout Code
@@ -76,6 +116,12 @@ jobs:
           Compress-Archive -Path "$pkg/*" -DestinationPath 'Logitech-GHub-Widget-Setup.zip' -Force
           Remove-Item $pkg -Recurse -Force
 
+      - name: Download GNOME extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gnome-extension
+          path: .
+
       - name: Compute SHA256 Hashes
         id: compute_hash
         run: |
@@ -87,6 +133,7 @@ jobs:
           $cliMacX64Hash = (Get-FileHash 'ghub-cli-osx-x64.tar.gz' -Algorithm SHA256).Hash
           $cliMacArmHash = (Get-FileHash 'ghub-cli-osx-arm64.tar.gz' -Algorithm SHA256).Hash
           $pyHash = (Get-FileHash 'ghub-cli.py' -Algorithm SHA256).Hash
+          $gnomeHash = (Get-FileHash 'ghub-battery@vinipy12.github.io.shell-extension.zip' -Algorithm SHA256).Hash
           
           Write-Host "=== SHA256 Verification ==="
           Write-Host "Logitech-GHub-Widget-Setup.zip: $zipHash"
@@ -104,6 +151,7 @@ jobs:
           "$cliMacX64Hash  ghub-cli-osx-x64.tar.gz" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
           "$cliMacArmHash  ghub-cli-osx-arm64.tar.gz" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
           "$pyHash  ghub-cli.py" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
+          "$gnomeHash  ghub-battery@vinipy12.github.io.shell-extension.zip" | Out-File -Encoding utf8 -Append SHA256SUMS.txt
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -116,6 +164,7 @@ jobs:
             ghub-cli-osx-x64.tar.gz
             ghub-cli-osx-arm64.tar.gz
             ghub-cli.py
+            ghub-battery@vinipy12.github.io.shell-extension.zip
             SHA256SUMS.txt
 
       - name: Create GitHub Release (On Tag)
@@ -129,5 +178,6 @@ jobs:
             ghub-cli-osx-x64.tar.gz
             ghub-cli-osx-arm64.tar.gz
             ghub-cli.py
+            ghub-battery@vinipy12.github.io.shell-extension.zip
             SHA256SUMS.txt
           generate_release_notes: true
