@@ -64,6 +64,16 @@ Detalhes completos do modelo de segurança e como reportar vulnerabilidades: **[
 
 ---
 
+## 🐧 Ubuntu / GNOME: extensão para a barra superior
+
+No Linux não existe o agente do G HUB, mas o Ubuntu já expõe a bateria dos
+periféricos Logitech pelo UPower. A pasta **[`gnome-extension/`](gnome-extension/README.md)**
+traz uma extensão para GNOME Shell 46 (Ubuntu 24.04) que mostra um item por
+dispositivo na barra superior, com cores de alerta e notificação de bateria
+fraca. Instalação: `cd gnome-extension && make install`. Depois, reinicie o Shell (X11: Alt+F2, r, Enter; Wayland: encerre e reabra a sessão) e rode `gnome-extensions enable ghub-battery@vinipy12.github.io`; passos completos no README da extensão.
+
+---
+
 ## 🚀 Instalação Rápida do Widget (1 Clique)
 
 1. Baixe o pacote em **[Releases](https://github.com/Leosdc/logitech-ghub-widget/releases)** ou baixe o arquivo **[Logitech-GHub-Widget-Setup.zip](https://github.com/Leosdc/logitech-ghub-widget/raw/main/Logitech-GHub-Widget-Setup.zip)** ou clone este repositório:

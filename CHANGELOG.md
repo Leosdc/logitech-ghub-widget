@@ -6,6 +6,13 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
+## [Unreleased]
+
+### ✨ Adicionado
+- Extensão para GNOME Shell 46 (`gnome-extension/`): bateria dos periféricos na barra superior via UPower, cores âmbar/vermelha, notificação 20% ou menos, preferências.
+
+---
+
 ## [1.1.0] - 2026-10-26
 
 ### ✨ Adicionado

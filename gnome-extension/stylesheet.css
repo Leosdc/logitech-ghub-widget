@@ -1,0 +1,18 @@
+/* Explicit colors: St on GNOME 46 does not support CSS variables. */
+.ghub-battery-item {
+    spacing: 4px;
+}
+.ghub-battery-label {
+    font-feature-settings: "tnum";
+}
+.ghub-battery-amber .ghub-battery-label,
+.ghub-battery-amber StIcon {
+    color: #e5a50a;
+}
+.ghub-battery-red .ghub-battery-label,
+.ghub-battery-red StIcon {
+    color: #e01b24;
+}
+.ghub-battery-inactive {
+    opacity: 0.5;
+}

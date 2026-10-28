@@ -1,0 +1,9 @@
+{
+  "uuid": "ghub-battery@vinipy12.github.io",
+  "name": "Logitech G Battery",
+  "description": "Mostra a bateria dos periféricos Logitech G na barra superior, via UPower.",
+  "shell-version": ["46"],
+  "settings-schema": "org.gnome.shell.extensions.ghub-battery",
+  "url": "https://github.com/vinipy12/logitech-ghub-widget-ubuntu",
+  "version": 1
+}
