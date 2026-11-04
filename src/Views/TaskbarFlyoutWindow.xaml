@@ -1,0 +1,262 @@
+<Window x:Class="GHubWidget.Views.TaskbarFlyoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Logitech G HUB - Bateria"
+        Width="390"
+        SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize"
+        FontFamily="Segoe UI Variable Text, Segoe UI, Arial"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        RenderOptions.ClearTypeHint="Enabled"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        Deactivated="Window_Deactivated"
+        KeyDown="Window_KeyDown"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <!-- Windows 11 Fluent Theme Dynamic Brushes -->
+        <SolidColorBrush x:Key="Win11WindowBg" Color="#202020"/>
+        <SolidColorBrush x:Key="Win11TitleBarBg" Color="#262626"/>
+        <SolidColorBrush x:Key="Win11WindowBorder" Color="#3E3E3E"/>
+        <SolidColorBrush x:Key="Win11CardBg" Color="#2B2B2B"/>
+        <SolidColorBrush x:Key="Win11CardBorder" Color="#3C3C3C"/>
+        <SolidColorBrush x:Key="Win11Accent" Color="#60CDFF"/>
+        <SolidColorBrush x:Key="Win11AccentForeground" Color="#000000"/>
+        <SolidColorBrush x:Key="Win11AccentTint" Color="#2060CDFF"/>
+        <SolidColorBrush x:Key="Win11TextPrimary" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Win11TextSecondary" Color="#CCCCCC"/>
+        <SolidColorBrush x:Key="Win11TextMuted" Color="#9E9E9E"/>
+        <SolidColorBrush x:Key="Win11ProgressTrack" Color="#1A1A1A"/>
+        <SolidColorBrush x:Key="Win11ButtonBg" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="Win11ButtonBorder" Color="#3E3E3E"/>
+
+        <!-- Caption Icon Button -->
+        <Style x:Key="FlyoutIconButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Win11TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1FFFFFFF"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Win11TextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Action Button in Footer -->
+        <Style x:Key="FlyoutActionBtn" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Win11ButtonBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Win11TextPrimary}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Win11ButtonBorder}"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="9,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Win11Accent}"/>
+                                <Setter TargetName="border" Property="Background" Value="#1A888888"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Margin="10" CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="22" ShadowDepth="6" Opacity="0.55"/>
+        </Border.Effect>
+
+        <Border x:Name="MainContainer" CornerRadius="12" Background="{DynamicResource Win11WindowBg}" BorderBrush="{DynamicResource Win11WindowBorder}" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Header -->
+                    <RowDefinition Height="Auto"/> <!-- Connecting / Empty State -->
+                    <RowDefinition Height="*"/>    <!-- Devices List -->
+                    <RowDefinition Height="Auto"/> <!-- Footer / Actions -->
+                </Grid.RowDefinitions>
+
+                <!-- 1. Header -->
+                <Border Grid.Row="0" Background="{DynamicResource Win11TitleBarBg}" CornerRadius="12,12,0,0" Padding="14,10,10,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: G Logo + Title -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="24" Height="24" CornerRadius="5" Background="{DynamicResource Win11AccentTint}" BorderBrush="{DynamicResource Win11Accent}" BorderThickness="1" Margin="0,0,9,0">
+                                <TextBlock Text="G" Foreground="{DynamicResource Win11Accent}" FontWeight="Black" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Logitech G HUB" Foreground="{DynamicResource Win11TextPrimary}" FontWeight="SemiBold" FontSize="13"/>
+                                <TextBlock Text="Baterias em tempo real" Foreground="{DynamicResource Win11TextMuted}" FontSize="10.5"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Center: Status Dot -->
+                        <Border Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0" Background="{DynamicResource Win11ButtonBg}" BorderBrush="{DynamicResource Win11ButtonBorder}" BorderThickness="1" CornerRadius="10" Padding="7,2">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="#6CCB5F" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock x:Name="StatusText" Text="Conectado" Foreground="{DynamicResource Win11TextSecondary}" FontSize="10.5" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Right: Pin & Close Buttons -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="BtnPin" Style="{StaticResource FlyoutIconButton}" ToolTip="Fixar pop-up aberto" Click="BtnPin_Click" Margin="0,0,2,0">
+                                <TextBlock x:Name="TxtPinIcon" Text="📌" FontSize="11"/>
+                            </Button>
+                            <Button Style="{StaticResource FlyoutIconButton}" ToolTip="Fechar" Click="BtnClose_Click">
+                                <TextBlock Text="✕" FontSize="11" FontWeight="Bold"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 2. Connecting / Empty banner -->
+                <Border x:Name="BannerConnecting" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource Win11CardBg}" Margin="12,10,12,0" Padding="12,10" CornerRadius="8" BorderBrush="{DynamicResource Win11CardBorder}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="⏳" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TxtConnectingMsg" Text="Aguardando conexão com o agente Logitech G HUB..." Foreground="{DynamicResource Win11TextSecondary}" FontSize="11.5" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 3. Devices List -->
+                <ScrollViewer Grid.Row="2" MaxHeight="380" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="12,10,12,6">
+                    <ItemsControl x:Name="DevicesItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource Win11CardBg}" 
+                                        BorderBrush="{DynamicResource Win11CardBorder}" 
+                                        BorderThickness="1" 
+                                        CornerRadius="8" 
+                                        Padding="13,10" 
+                                        Margin="0,0,0,8"
+                                        Opacity="{Binding CardOpacity}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Top Row: Icon + Name + Badge -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Category Icon -->
+                                            <TextBlock Grid.Column="0" Text="{Binding DeviceCategoryIcon}" FontSize="17" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                            <!-- Device Name & Type -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Win11TextPrimary}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding DeviceCategoryLabel}" Foreground="{DynamicResource Win11TextMuted}" FontSize="10.5"/>
+                                            </StackPanel>
+
+                                            <!-- Status Pill -->
+                                            <Border Grid.Column="2" Background="{Binding StatusBadgeBg}" BorderBrush="{Binding StatusBadgeBorder}" BorderThickness="1" CornerRadius="10" Padding="7,2" VerticalAlignment="Center" Margin="6,0,0,0">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Ellipse Width="6" Height="6" Fill="{Binding StatusDotColor}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                    <TextBlock Text="{Binding StatusBadgeText}" Foreground="{Binding StatusBadgeFg}" FontSize="10" FontWeight="SemiBold"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- Middle Row: Progress Bar + Percentage -->
+                                        <Grid Grid.Row="1" Margin="0,2,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Progress Bar Track -->
+                                            <Border Grid.Column="0" Height="6" Background="{DynamicResource Win11ProgressTrack}" CornerRadius="3" ClipToBounds="True" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <ProgressBar Value="{Binding BatteryProgressValue, Mode=OneWay}" Maximum="100" Height="6" Foreground="{Binding BatteryColor}" Background="Transparent" BorderThickness="0"/>
+                                            </Border>
+
+                                            <!-- Formatted Percentage -->
+                                            <TextBlock Grid.Column="1" Text="{Binding FormattedPercentage}" Foreground="{Binding BatteryColor}" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
+                                        </Grid>
+
+                                        <!-- Bottom Row: Estimated Hours + Power Consumption -->
+                                        <Grid Grid.Row="2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" Text="{Binding FormattedMileage}" Foreground="{DynamicResource Win11TextSecondary}" FontSize="11.5" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding FormattedConsumption}" Foreground="{DynamicResource Win11TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- 4. Footer / Quick Actions -->
+                <Border Grid.Row="3" Background="{DynamicResource Win11TitleBarBg}" CornerRadius="0,0,12,12" Padding="12,9" BorderBrush="{DynamicResource Win11CardBorder}" BorderThickness="0,1,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left buttons -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Style="{StaticResource FlyoutActionBtn}" Content="⚡ Abrir G HUB" Click="BtnLaunchGHub_Click" Margin="0,0,6,0"/>
+                            <Button Style="{StaticResource FlyoutActionBtn}" Content="🔄 Atualizar" Click="BtnRefresh_Click" Margin="0,0,6,0"/>
+                        </StackPanel>
+
+                        <!-- Right buttons -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Style="{StaticResource FlyoutActionBtn}" Content="🖥️ Janela" ToolTip="Abrir na janela flutuante" Click="BtnOpenMainWindow_Click" Margin="0,0,6,0"/>
+                            <Button Style="{StaticResource FlyoutActionBtn}" Content="⚙️" ToolTip="Configurações do Widget" Click="BtnOpenSettings_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Border>
+</Window>
+

@@ -6,6 +6,74 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
+## [1.3.2] - 2026-11-04
+
+### ⚡ Estabilidade da Barra de Tarefas & Z-Order Permanente
+- **Persistência Total sobre a Barra de Tarefas (Zero Disappear on Click):**
+  - Implementado gancho nativo Win32 (`SetWinEventHook` com `EVENT_SYSTEM_FOREGROUND`) e listener para o evento `Deactivated`: o widget detecta em 0 milissegundos cliques na área livre da barra de tarefas (`Shell_TrayWnd`) ou trocas de janela, re-ancorando sua camada Z-order (`HWND_TOPMOST` com `SWP_NOACTIVATE`) instantaneamente sem roubar foco.
+  - Eliminação completa de falsos-positivos de tela cheia que causavam ocultamento indevido ao focar na Área de Trabalho (classe `WorkerW`) ou em navegadores/editores de código.
+  - Atualização in-place (`_pillMap`): variações percentuais de bateria atualizam propriedades diretamente nos elementos WPF existentes, prevenindo cintilações (flicker) e redesenhos forçados de superfície DWM.
+
+### 🎯 Interação Fluida por Clique
+- **1 Clique Simples (Botão Esquerdo):** Alterna o pop-up Fluent completo (Flyout) diretamente acima do ícone na barra de tarefas, replicando o comportamento dos controles nativos de som, rede e calendário do Windows 11.
+- **Duplo Clique:** Abre o painel principal de configurações.
+- **Botão Direito:** Menu de contexto com atalhos para abrir o Logitech G HUB oficial, forçar atualização imediata e acessar configurações.
+
+### 🔔 Bandeja do Sistema (System Tray) Limpa
+- **Ícone Principal Preservado:** O ícone unificado do Logitech G HUB Widget permanece sempre acessível na bandeja (`^`), permitindo atalhos rápidos e resumo consolidado via tooltip.
+- **Prevenção de Duplicidades:** Ícones numéricos individuais na bandeja ficam desativados por padrão no modo barra de tarefas, mantendo o menu suspenso limpo e minimalista.
+
+### 🖥️ Múltiplos Monitores
+- Abertura de janelas de configuração posicionadas de forma inteligente na tela ativa do ponteiro do mouse, evitando que o painel surja fora do campo de visão do usuário.
+
+---
+
+## [1.3.1] - 2026-11-03
+
+### ⚡ Redesenho Completo dos Ícones na Barra de Tarefas (System Tray)
+- **Escala e Peso Visual Nativos do Windows 11:**
+  - Ícones agora ocupam 100% da área útil (15-16px na grade nativa de 16x16 / 20x20 / 32x32 com `SM_CXSMICON`), correspondendo com exatidão à escala e visibilidade dos ícones nativos do sistema (como Rede Ethernet e Alto-Falante).
+  - Eliminação de qualquer downsampling bilinear do Windows que causava embaçamento em ícones pequenos.
+- **Exibição dos 3 Dispositivos Individuais:**
+  - Todos os periféricos Logitech (Mouse, Teclado e Headset) possuem seus próprios ícones dedicados e independentes na barra de tarefas.
+  - Dispositivos em modo de repouso ou desligados permanecem visíveis com glifo atenuado e rótulo `"OFF"`, mantendo a consistência dos 3 periféricos.
+- **Tipografia e Indicadores de Alto Contraste:**
+  - Dígitos de bateria ampliados e em negrito nítido (1-bit pixel fit), com cores vibrantes adaptativas (verde, amarelo, vermelho e ciano para carregamento com `⚡`).
+  - Suporte completo a 100% com alinhamento perfeito de 3 dígitos (`100`).
+- **Pop-up Fluent 2.0 Completo ao Passar o Mouse:**
+  - Passar o mouse sobre qualquer um dos ícones abre instantaneamente o pop-up com dados aprofundados de todos os periféricos: porcentagem, status de recarga, consumo e autonomia.
+
+---
+
+## [1.3.0] - 2026-11-03
+
+### ✨ Adicionado
+- **Faixa de Periféricos Direto na Barra de Tarefas (Taskbar Strip - Estilo Ubuntu / GNOME Top Bar):**
+  - **Exibição Direta na Barra de Tarefas:** Widget horizontal nativo acoplado diretamente na superfície da barra de tarefas (à esquerda da área de notificação/seta `^`), **sem que o usuário precise desocultar ícones do menu overflow**.
+  - **Pílulas Elegantes no Estilo Fluent 2.0:** Cada periférico ativo ganha uma pílula horizontal (`[ 🖱️ 61% ]  [ ⌨️ 99% ]`) com glifo vetorial nítido, tipografia cristalina em tamanho legível (Segoe UI Variable 12px), indicador de carregamento `⚡` e cores adaptativas por faixa de bateria (verde >50%, amarelo 20-50%, vermelho <=20%, ciano carregando).
+  - **Rastreamento Automático da Barra:** Posicionamento dinâmico que acompanha redimensionamentos, movimentações da bandeja de notificações e auto-ocultação inteligente ao jogar em tela cheia (fullscreen) ou reproduzir vídeos.
+  - **Pop-up / Flyout Moderno ao Passar o Mouse (Hover):**
+    - Ao passar o cursor sobre as pílulas na barra, surge suavemente o pop-up completo no padrão Windows 11 Fluent 2.0 (WinUI 3).
+    - Exibe todos os dados: porcentagem exata, status de carregamento, consumo em tempo real em miliwatts (`mW`), estimativa de autonomia em horas (`~Xh restantes`) e barra de progresso individual colorida.
+    - **Botão Fixar (Pin 📌):** Permite manter o pop-up aberto para consultas prolongadas.
+    - **Ações Rápidas integradas:** Atalhos para abrir o Logitech G HUB oficial, forçar atualização imediata, alternar modos de exibição e abrir Configurações.
+    - **Debounce inteligente:** Tolerância de 360ms na saída do ponteiro para movimentação fluida do mouse entre a barra e o pop-up, além de fechamento automático com `Esc` ou clique fora.
+  - **Seletor de 3 Modos de Exibição nas Preferências:**
+    - **🚀 Faixa na Barra de Tarefas (Padrão - Direto na Barra):** Acesso imediato no estilo Ubuntu.
+    - **🔔 Ícones na Área de Notificação (Bandeja / Tray):** Ícones individuais na bandeja do Windows ao lado do relógio.
+    - **🖥️ Janela Flutuante na Área de Trabalho:** Telinha clássica com visual Fluent 2.0 na área de trabalho.
+
+### ⚡ Aprimorado
+- **Melhoria Drástica na Legibilidade dos Ícones da Bandeja (System Tray):**
+  - Aumentada substancialmente a proporção do número da bateria nos ícones da bandeja, com fonte em negrito e contorno de alto contraste (shadow/halo) de 1px.
+  - Elimina o problema de dígitos minúsculos ou ilegíveis em barras de tarefas escuras, claras ou translúcidas.
+- **Detecção Resiliente de Periféricos sem Fio:**
+  - Consulta do estado de bateria estendida para todos os periféricos enumerados na inicialização do G HUB, garantindo leitura instantânea mesmo em dispositivos sem fio que inicializam em estado de repouso (Lightspeed sleep mode).
+- **Gerenciamento de Ciclo de Vida em Segundo Plano:**
+  - `ShutdownMode="OnExplicitShutdown"` no WPF com controle robusto de alocação de HICONs nativos via `DestroyIcon`, prevenindo memory leaks e fechamentos inadvertidos.
+
+---
+
 ## [1.2.0] - 2026-10-28
 
 ### ✨ Adicionado

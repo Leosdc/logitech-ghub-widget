@@ -21,6 +21,14 @@ namespace GHubWidget.Models
         public int RefreshIntervalSeconds { get; set; } = 5;
         public string ThemeMode { get; set; } = "System"; // "System", "Dark", "Light"
 
+        // Display Modes: "TaskbarWidget" (default - individual device icons on taskbar), "FloatingWindow"
+        public string DisplayMode { get; set; } = "TaskbarWidget";
+        public bool HoverFlyoutEnabled { get; set; } = true;
+        public bool IndividualDeviceIcons { get; set; } = true;
+        public bool HideInactiveFromTaskbar { get; set; } = false;
+        public bool ShowInactiveInFlyout { get; set; } = true;
+        public bool ShowTrayIconsWithTaskbarStrip { get; set; } = false;
+
         private static string SettingsFilePath
         {
             get
@@ -42,6 +50,10 @@ namespace GHubWidget.Models
                     var settings = JsonSerializer.Deserialize<AppSettings>(json);
                     if (settings != null)
                     {
+                        if (settings.DisplayMode == "TaskbarStrip")
+                        {
+                            settings.DisplayMode = "TaskbarWidget";
+                        }
                         settings.SyncAutoStartWithRegistry();
                         return settings;
                     }
@@ -127,6 +139,24 @@ namespace GHubWidget.Models
             }
             catch { }
             return true; // Padrão escuro
+        }
+
+        public static bool IsTaskbarDarkTheme()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", false);
+                if (key != null)
+                {
+                    var sysVal = key.GetValue("SystemUsesLightTheme");
+                    if (sysVal is int s && s == 1)
+                    {
+                        return false; // Taskbar is in light mode
+                    }
+                }
+            }
+            catch { }
+            return true; // Default taskbar is dark
         }
     }
 }

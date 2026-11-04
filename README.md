@@ -10,6 +10,8 @@
 
 Um widget moderno com interface nativa **Windows 11 Fluent 2.0 (WinUI 3)** para monitorar em tempo real o nível de bateria, status de carregamento, autonomia estimada e consumo de energia dos seus periféricos Logitech G (Mouse, Teclado, Headset, etc.).
 
+A partir da **v1.3.0**, conta com o **Modo Widget na Barra de Tarefas** (inspirado no comportamento do Ubuntu/GNOME): ícones dinâmicos de cada periférico ativo com o valor da bateria diretamente na barra de tarefas do Windows e um pop-up (flyout) completo e detalhado ao passar o cursor do mouse!
+
 A partir da **v1.1.0**, também há uma **versão de terminal (CLI)** que mostra os mesmos dados em uma tela de prompt atualizada em tempo real. Ela funciona no Windows, macOS e Linux.
 
 Para **Ubuntu com GNOME**, onde o G HUB não existe, há uma **extensão para a barra superior** (`gnome-extension/`, desenvolvida por **[@vinipy12](https://github.com/vinipy12)**) que lê a bateria dos periféricos direto do UPower, sem precisar do G HUB nem de outra máquina.
@@ -54,9 +56,11 @@ Detalhes completos do modelo de segurança e como reportar vulnerabilidades: **[
   - **🌗 Seguir o Windows (Padrão):** Detecta e sincroniza automaticamente com o modo Claro ou Escuro do Windows.
   - **☀️ Modo Claro:** Fundo claro com contraste máximo e tipografia nítida.
   - **🌙 Modo Escuro:** Estilo Fluent Dark autêntico com superfícies WinUI 3.
-- 📌 **Modos de Exibição:**
-  - **Sempre no Topo (`🔝`):** O widget flutua sobre jogos e outras janelas.
-  - **Fixado na Área de Trabalho (`📌`):** Comporta-se como um widget no papel de parede, atrás de navegadores e janelas.
+- 📌 **Modos de Exibição Flexíveis:**
+  - **🚀 Widget na Barra de Tarefas (Padrão - Estilo Ubuntu/GNOME):** Ícones dinâmicos no System Tray para cada periférico exibindo glifo e porcentagem em tempo real; passar o mouse abre o pop-up Fluent completo com autonomia estimada e consumo.
+  - **🖥️ Janela Flutuante na Área de Trabalho:** Telinha clássica com visual Fluent 2.0 na área de trabalho.
+  - **🔝 Sempre no Topo:** A janela flutua sobre jogos e outras janelas.
+  - **📌 Fixado no Papel de Parede:** Fica na área de trabalho, atrás de janelas abertas.
   - **Bandeja do Sistema (System Tray):** Minimiza discretamente ao lado do relógio do Windows com tooltip de status.
 - ⚡ **Alertas de Bateria Fraca:**
   - Notificação na Central de Notificações do Windows quando a bateria cair abaixo de 20%.

@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using GHubWidget.Helpers;
 using GHubWidget.Models;
 using GHubWidget.Services;
+using GHubWidget.Views;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 using Color = System.Windows.Media.Color;
@@ -24,12 +25,17 @@ namespace GHubWidget
 
         private readonly LgHubService _service = new();
         private AppSettings _settings = new();
-        private NotifyIcon? _trayIcon;
+        private TrayManager? _trayManager;
+        private TaskbarFlyoutWindow? _flyoutWindow;
+        private TaskbarStripWindow? _stripWindow;
         private bool _isExplicitExit = false;
+        private bool _isInitialized = false;
 
         public MainWindow()
         {
             InitializeComponent();
+            new WindowInteropHelper(this).EnsureHandle();
+            InitializeWidget();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -37,6 +43,64 @@ namespace GHubWidget
             base.OnSourceInitialized(e);
             var source = (HwndSource?)PresentationSource.FromVisual(this);
             source?.AddHook(WndProc);
+
+            if (_settings.DisplayMode != "FloatingWindow")
+            {
+                EnterTaskbarMode();
+            }
+        }
+
+        public void EnterTaskbarMode()
+        {
+            AppLogger.Log("MainWindow EnterTaskbarMode called.");
+            ShowInTaskbar = false;
+            Visibility = Visibility.Hidden;
+            _trayManager?.UpdateTrayIcons();
+            if (_stripWindow != null)
+            {
+                _stripWindow.Visibility = Visibility.Visible;
+                _stripWindow.RebuildPills();
+                _stripWindow.UpdatePosition();
+            }
+        }
+
+        public void EnterWindowMode()
+        {
+            ShowInTaskbar = true;
+            Visibility = Visibility.Visible;
+            Show();
+
+            var cursorScreen = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position) 
+                               ?? System.Windows.Forms.Screen.PrimaryScreen 
+                               ?? System.Windows.Forms.Screen.AllScreens[0];
+
+            double targetLeft = cursorScreen.WorkingArea.Right - Width - 30;
+            double targetTop = cursorScreen.WorkingArea.Top + 60;
+
+            if (!double.IsNaN(_settings.WindowLeft) && !double.IsNaN(_settings.WindowTop))
+            {
+                bool onValidScreen = false;
+                foreach (var s in System.Windows.Forms.Screen.AllScreens)
+                {
+                    if (s.Bounds.Contains((int)_settings.WindowLeft, (int)_settings.WindowTop))
+                    {
+                        onValidScreen = true;
+                        break;
+                    }
+                }
+
+                if (onValidScreen)
+                {
+                    targetLeft = _settings.WindowLeft;
+                    targetTop = _settings.WindowTop;
+                }
+            }
+
+            Left = targetLeft;
+            Top = targetTop;
+
+            WindowState = WindowState.Normal;
+            Activate();
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -53,6 +117,17 @@ namespace GHubWidget
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            if (!_isInitialized)
+            {
+                InitializeWidget();
+            }
+        }
+
+        private void InitializeWidget()
+        {
+            if (_isInitialized) return;
+            _isInitialized = true;
+
             _settings = AppSettings.Load();
 
             // Hook system theme change notification
@@ -61,6 +136,23 @@ namespace GHubWidget
             // Apply Theme
             ApplyTheme(_settings.ThemeMode);
 
+            // Display Mode Pills
+            if (_settings.DisplayMode == "FloatingWindow")
+            {
+                RadioModeWindow.IsChecked = true;
+            }
+            else
+            {
+                RadioModeTaskbar.IsChecked = true;
+            }
+
+            // Taskbar Options
+            ChkHoverFlyout.IsChecked = _settings.HoverFlyoutEnabled;
+            ChkIndividualIcons.IsChecked = _settings.IndividualDeviceIcons;
+            ChkHideInactive.IsChecked = _settings.HideInactiveFromTaskbar;
+            ChkShowTrayIcons.IsChecked = _settings.ShowTrayIconsWithTaskbarStrip;
+
+            // Theme Pills
             if (_settings.ThemeMode == "Light")
                 RadioThemeLight.IsChecked = true;
             else if (_settings.ThemeMode == "Dark")
@@ -68,7 +160,7 @@ namespace GHubWidget
             else
                 RadioThemeSystem.IsChecked = true;
 
-            // Apply Interval Pills
+            // Interval Pills
             switch (_settings.RefreshIntervalSeconds)
             {
                 case 2: RadioInterval2.IsChecked = true; break;
@@ -102,8 +194,8 @@ namespace GHubWidget
 
             ApplyWindowLayering();
 
-            // Setup Tray Icon
-            SetupTrayIcon();
+            // Setup Flyout and Tray Manager
+            SetupTrayManager();
 
             // Setup Service
             DevicesList.ItemsSource = _service.Devices;
@@ -132,7 +224,6 @@ namespace GHubWidget
                     }
 
                     UpdateFooterInfo();
-                    UpdateTrayToolTip();
                 });
             };
 
@@ -148,39 +239,71 @@ namespace GHubWidget
                                 propArgs.PropertyName == nameof(DeviceInfo.BatteryPercentage) ||
                                 propArgs.PropertyName == nameof(DeviceInfo.IsCharging))
                             {
-                                Dispatcher.Invoke(() =>
-                                {
-                                    UpdateFooterInfo();
-                                    UpdateTrayToolTip();
-                                });
+                                Dispatcher.Invoke(UpdateFooterInfo);
                             }
                         };
                     }
                 }
 
-                Dispatcher.Invoke(() =>
-                {
-                    UpdateFooterInfo();
-                    UpdateTrayToolTip();
-                });
+                Dispatcher.Invoke(UpdateFooterInfo);
             };
 
             _service.LowBatteryAlertTriggered += (dev) =>
             {
-                if (_settings.LowBatteryAlert && _trayIcon != null)
+                if (_settings.LowBatteryAlert)
                 {
-                    Dispatcher.Invoke(() =>
-                    {
-                        _trayIcon.ShowBalloonTip(
-                            5000,
-                            "Bateria Fraca - Logitech G",
-                            $"{dev.Name} está com {dev.BatteryPercentage}% de bateria. Conecte o carregador!",
-                            ToolTipIcon.Warning);
-                    });
+                    Dispatcher.Invoke(() => _trayManager?.ShowLowBatteryNotification(dev));
                 }
             };
 
             _service.Start();
+        }
+
+        private void SetupTrayManager()
+        {
+            _flyoutWindow = new TaskbarFlyoutWindow(_service, OnOpenMainWindowFromTray, OnOpenSettingsFromTray);
+            bool isDark = _settings.ThemeMode == "Dark" || (_settings.ThemeMode == "System" && AppSettings.IsSystemDarkTheme());
+            _flyoutWindow.ApplyTheme(isDark);
+
+            _trayManager = new TrayManager(
+                _service,
+                _settings,
+                _flyoutWindow,
+                OnOpenMainWindowFromTray,
+                OnOpenSettingsFromTray,
+                OnExplicitExitFromTray);
+
+            _stripWindow = new TaskbarStripWindow(
+                _service,
+                _settings,
+                _flyoutWindow,
+                OnOpenMainWindowFromTray,
+                OnOpenSettingsFromTray,
+                OnExplicitExitFromTray);
+
+            if (_settings.DisplayMode != "FloatingWindow")
+            {
+                _stripWindow.Show();
+                _stripWindow.UpdatePosition();
+            }
+        }
+
+        private void OnOpenMainWindowFromTray()
+        {
+            EnterWindowMode();
+            if (TabDevices != null) TabDevices.IsChecked = true;
+        }
+
+        private void OnOpenSettingsFromTray()
+        {
+            EnterWindowMode();
+            if (TabSettings != null) TabSettings.IsChecked = true;
+        }
+
+        private void OnExplicitExitFromTray()
+        {
+            _isExplicitExit = true;
+            Close();
         }
 
         private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
@@ -260,6 +383,61 @@ namespace GHubWidget
             {
                 dev.SetTheme(isDark);
             }
+
+            _flyoutWindow?.ApplyTheme(isDark);
+            _stripWindow?.UpdateTheme();
+            _trayManager?.UpdateTrayIcons();
+        }
+
+        private void DisplayModeRadio_Changed(object sender, RoutedEventArgs e)
+        {
+            if (RadioModeTaskbar == null || RadioModeWindow == null) return;
+
+            if (RadioModeTaskbar.IsChecked == true)
+            {
+                _settings.DisplayMode = "TaskbarWidget";
+                EnterTaskbarMode();
+            }
+            else
+            {
+                _settings.DisplayMode = "FloatingWindow";
+                if (_stripWindow != null) _stripWindow.Visibility = Visibility.Hidden;
+                EnterWindowMode();
+            }
+
+            _settings.Save();
+            _trayManager?.UpdateTrayIcons();
+        }
+
+        private void ChkHoverFlyout_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkHoverFlyout == null) return;
+            _settings.HoverFlyoutEnabled = ChkHoverFlyout.IsChecked == true;
+            _settings.Save();
+        }
+
+        private void ChkIndividualIcons_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkIndividualIcons == null) return;
+            _settings.IndividualDeviceIcons = ChkIndividualIcons.IsChecked == true;
+            _settings.Save();
+            _trayManager?.UpdateTrayIcons();
+        }
+
+        private void ChkHideInactive_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkHideInactive == null) return;
+            _settings.HideInactiveFromTaskbar = ChkHideInactive.IsChecked == true;
+            _settings.Save();
+            _trayManager?.UpdateTrayIcons();
+        }
+
+        private void ChkShowTrayIcons_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkShowTrayIcons == null) return;
+            _settings.ShowTrayIconsWithTaskbarStrip = ChkShowTrayIcons.IsChecked == true;
+            _settings.Save();
+            _trayManager?.UpdateTrayIcons();
         }
 
         private void ThemeRadio_Changed(object sender, RoutedEventArgs e)
@@ -300,55 +478,6 @@ namespace GHubWidget
                 ViewDevices.Visibility = Visibility.Collapsed;
                 ViewSettings.Visibility = Visibility.Visible;
             }
-        }
-
-        private void SetupTrayIcon()
-        {
-            try
-            {
-                var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                Icon icon = File.Exists(iconPath) ? new Icon(iconPath) : SystemIcons.Application;
-
-                _trayIcon = new NotifyIcon
-                {
-                    Icon = icon,
-                    Visible = true,
-                    Text = "Logitech G HUB Widget"
-                };
-
-                _trayIcon.DoubleClick += (s, e) =>
-                {
-                    Show();
-                    WindowState = WindowState.Normal;
-                    Activate();
-                };
-
-                var contextMenu = new ContextMenuStrip();
-                contextMenu.Items.Add("Abrir Widget", null, (s, e) =>
-                {
-                    Show();
-                    WindowState = WindowState.Normal;
-                    Activate();
-                });
-                contextMenu.Items.Add("Atualizar Dados", null, async (s, e) =>
-                {
-                    await _service.RefreshNowAsync();
-                });
-                contextMenu.Items.Add(new ToolStripSeparator());
-                contextMenu.Items.Add("Abrir Logitech G HUB", null, (s, e) =>
-                {
-                    LaunchGHub();
-                });
-                contextMenu.Items.Add(new ToolStripSeparator());
-                contextMenu.Items.Add("Sair", null, (s, e) =>
-                {
-                    _isExplicitExit = true;
-                    Close();
-                });
-
-                _trayIcon.ContextMenuStrip = contextMenu;
-            }
-            catch { }
         }
 
         private void ApplyWindowLayering()
@@ -400,28 +529,6 @@ namespace GHubWidget
             }
         }
 
-        private void UpdateTrayToolTip()
-        {
-            if (_trayIcon == null) return;
-            if (_service.Devices.Count == 0)
-            {
-                _trayIcon.Text = "Logitech G HUB: Conectando...";
-                return;
-            }
-
-            var parts = new System.Collections.Generic.List<string>();
-            foreach (var d in _service.Devices)
-            {
-                if (d.IsActive)
-                    parts.Add($"{d.DeviceCategoryLabel}: {d.BatteryPercentage}%");
-                else
-                    parts.Add($"{d.DeviceCategoryLabel}: Inativo");
-            }
-            var text = string.Join(" | ", parts);
-            if (text.Length > 63) text = text.Substring(0, 60) + "...";
-            _trayIcon.Text = text;
-        }
-
         private void Header_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
@@ -459,14 +566,12 @@ namespace GHubWidget
 
         private void BtnMinimize_Click(object sender, RoutedEventArgs e)
         {
-            Hide();
-            _trayIcon?.ShowBalloonTip(2000, "Logitech G HUB Widget", "O widget continua ativo na bandeja do sistema.", ToolTipIcon.Info);
+            EnterTaskbarMode();
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
-            Hide();
-            _trayIcon?.ShowBalloonTip(2000, "Logitech G HUB Widget", "O widget foi minimizado para a bandeja.", ToolTipIcon.Info);
+            EnterTaskbarMode();
         }
 
         private void SliderOpacity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -552,8 +657,7 @@ namespace GHubWidget
             if (!_isExplicitExit)
             {
                 e.Cancel = true;
-                Hide();
-                _trayIcon?.ShowBalloonTip(2000, "Logitech G HUB Widget", "O widget continua rodando na bandeja.", ToolTipIcon.Info);
+                EnterTaskbarMode();
                 return;
             }
 
@@ -563,8 +667,12 @@ namespace GHubWidget
             _settings.WindowTop = Top;
             _settings.Save();
 
-            _trayIcon?.Dispose();
+            _stripWindow?.Dispose();
+            _trayManager?.Dispose();
+            _flyoutWindow?.Close();
             _service.Dispose();
+
+            System.Windows.Application.Current.Shutdown();
         }
     }
 }

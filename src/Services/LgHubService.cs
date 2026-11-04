@@ -270,11 +270,8 @@ namespace GHubWidget.Services
                     }
                 });
 
-                if (isActive)
-                {
-                    // Immediately fetch battery for this active device
-                    _ = SendJsonAsync($"{{\"path\":\"/battery/{id}/state\",\"verb\":\"GET\"}}", CancellationToken.None);
-                }
+                // Always fetch battery state for each device (G HUB responds with SUCCESS if online, or error if off)
+                _ = SendJsonAsync($"{{\"path\":\"/battery/{id}/state\",\"verb\":\"GET\"}}", CancellationToken.None);
             }
 
             // Mark devices that are no longer reported in deviceInfos as inactive
