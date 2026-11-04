@@ -6,6 +6,21 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
+## [1.3.3] - 2026-11-04
+
+### 🎮 Ocultamento Automático em Jogos e Aplicativos em Tela Cheia (Fullscreen)
+- **Detecção Precisa de Tela Cheia:**
+  - Implementada detecção inteligente via Win32 (`GetForegroundWindow`, `WindowFromPoint` e validação geométrica de tela): o widget identifica instantaneamente quando qualquer jogo ou aplicativo entra em modo tela cheia (exclusivo, sem bordas/borderless ou vídeos F11).
+  - O widget oculta sua faixa da barra de tarefas de forma limpa (`Visibility = Hidden`), sem sobrepor HUDs, miras ou elementos visuais do jogo.
+- **Suporte Multi-Monitor e Segundo Plano:**
+  - Valida o monitor ativo do jogo e do widget. Se o usuário estiver interagindo com um monitor secundário enquanto o jogo ocupa o monitor principal, o widget permanece corretamente oculto sob o jogo.
+- **Restauração Imediata ao Sair do Jogo:**
+  - Ao alternar janelas (Alt+Tab), pressionar a tecla Windows ou fechar o jogo, o widget detecta a desocupação da tela e reancora suavemente na barra de tarefas em 0ms.
+- **Filtro Estrito de Classes do Shell:**
+  - Janelas nativas do Windows como Área de Trabalho (`Progman`, `WorkerW`), Menu Iniciar (`CoreWindow`), Barra de Tarefas (`Shell_TrayWnd`) e Central de Notificações são categorizadas de forma imune, garantindo que o widget jamais pisque ou suma em uso normal da área de trabalho.
+
+---
+
 ## [1.3.2] - 2026-11-04
 
 ### ⚡ Estabilidade da Barra de Tarefas & Z-Order Permanente

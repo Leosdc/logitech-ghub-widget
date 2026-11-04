@@ -107,18 +107,18 @@ namespace GHubWidget.Views
                 Dispatcher.Invoke(RebuildPills);
             };
 
-            // Whenever this window loses focus or the user clicks the taskbar, re-assert topmost Z-order
+            // Whenever this window loses focus or the user clicks the taskbar, check state and re-assert topmost Z-order if not in fullscreen
             Deactivated += (s, e) =>
             {
-                Dispatcher.BeginInvoke(new Action(BringToTop));
+                Dispatcher.BeginInvoke(new Action(CheckPositionAndState));
             };
 
-            // Win32 hook: whenever ANY foreground window changes (e.g. user clicks the taskbar), keep this strip on top
+            // Win32 hook: whenever ANY foreground window changes (e.g. user clicks the taskbar or opens a fullscreen game), react immediately
             try
             {
                 _winEventDelegate = (hHook, eventType, hwnd, idObject, idChild, dwEventThread, dwmsEventTime) =>
                 {
-                    Dispatcher.BeginInvoke(new Action(BringToTop));
+                    Dispatcher.BeginInvoke(new Action(CheckPositionAndState));
                 };
                 _winEventHook = NativeMethods.SetWinEventHook(
                     NativeMethods.EVENT_SYSTEM_FOREGROUND,
@@ -531,6 +531,15 @@ namespace GHubWidget.Views
                 var helper = new WindowInteropHelper(this);
                 if (helper.Handle != IntPtr.Zero)
                 {
+                    if (NativeMethods.IsForegroundWindowFullscreen(helper.Handle))
+                    {
+                        if (Visibility != Visibility.Hidden)
+                        {
+                            Visibility = Visibility.Hidden;
+                        }
+                        return;
+                    }
+
                     NativeMethods.SetWindowPos(helper.Handle, (IntPtr)NativeMethods.HWND_TOPMOST,
                         0, 0, 0, 0,
                         NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
@@ -543,7 +552,11 @@ namespace GHubWidget.Views
         {
             if (_isDisposed) return;
 
-            bool shouldBeVisible = (_settings.DisplayMode != "FloatingWindow");
+            var helper = new WindowInteropHelper(this);
+            IntPtr hwnd = helper.Handle;
+
+            bool isFullscreen = NativeMethods.IsForegroundWindowFullscreen(hwnd);
+            bool shouldBeVisible = (_settings.DisplayMode != "FloatingWindow") && !isFullscreen;
 
             if (shouldBeVisible)
             {
@@ -588,6 +601,13 @@ namespace GHubWidget.Views
 
                 if (taskbarHwnd != IntPtr.Zero)
                 {
+                    if (NativeMethods.GetWindowRect(taskbarHwnd, out var tbRect) && tbRect.Height >= 30)
+                    {
+                        taskbarTop = tbRect.Top;
+                        taskbarHeight = tbRect.Height;
+                        targetTop = taskbarTop + (taskbarHeight - stripHeight) / 2.0;
+                    }
+
                     IntPtr trayHwnd = NativeMethods.FindWindowEx(taskbarHwnd, IntPtr.Zero, "TrayNotifyWnd", null);
                     if (trayHwnd != IntPtr.Zero && NativeMethods.GetWindowRect(trayHwnd, out var trayRect))
                     {

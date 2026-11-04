@@ -174,10 +174,102 @@ namespace GHubWidget.Helpers
             }
         }
 
-        public static bool IsForegroundWindowFullscreen()
+        public const uint GA_ROOT = 2;
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr WindowFromPoint(POINT Point);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("user32.dll", EntryPoint = "GetClassNameW", CharSet = CharSet.Unicode)]
+        public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+        public static bool IsForegroundWindowFullscreen(IntPtr selfHwnd = default)
         {
-            // Fully disabled: Taskbar-anchored widget should never hide arbitrarily when switching apps or clicking desktop
+            var widgetScreen = System.Windows.Forms.Screen.PrimaryScreen ?? System.Windows.Forms.Screen.AllScreens[0];
+            if (widgetScreen == null) return false;
+            var bounds = widgetScreen.Bounds;
+            const int tolerance = 4;
+
+            // 1. Check Foreground Window
+            IntPtr fg = GetForegroundWindow();
+            if (fg != IntPtr.Zero && fg != selfHwnd)
+            {
+                GetWindowThreadProcessId(fg, out uint pid);
+                if (pid != (uint)Environment.ProcessId)
+                {
+                    IntPtr rootFg = GetAncestor(fg, GA_ROOT);
+                    if (rootFg == IntPtr.Zero) rootFg = fg;
+
+                    if (IsWindowCoveringScreen(rootFg, bounds, tolerance))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // 2. Check window at center of widget screen (handles multi-monitor or background fullscreen games)
+            var centerPoint = new POINT
+            {
+                X = bounds.Left + bounds.Width / 2,
+                Y = bounds.Top + bounds.Height / 2
+            };
+            IntPtr centerHwnd = WindowFromPoint(centerPoint);
+            if (centerHwnd != IntPtr.Zero && centerHwnd != selfHwnd)
+            {
+                GetWindowThreadProcessId(centerHwnd, out uint pid);
+                if (pid != (uint)Environment.ProcessId)
+                {
+                    IntPtr rootCenter = GetAncestor(centerHwnd, GA_ROOT);
+                    if (rootCenter == IntPtr.Zero) rootCenter = centerHwnd;
+
+                    if (IsWindowCoveringScreen(rootCenter, bounds, tolerance))
+                    {
+                        return true;
+                    }
+                }
+            }
+
             return false;
+        }
+
+        private static bool IsWindowCoveringScreen(IntPtr hwnd, System.Drawing.Rectangle bounds, int tolerance)
+        {
+            var sbClass = new System.Text.StringBuilder(256);
+            GetClassName(hwnd, sbClass, 256);
+            string className = sbClass.ToString();
+
+            // Shell & desktop classes never count as fullscreen games
+            if (className == "Progman" ||
+                className == "WorkerW" ||
+                className == "Shell_TrayWnd" ||
+                className == "Shell_SecondaryTrayWnd" ||
+                className == "Windows.UI.Core.CoreWindow" ||
+                className == "XamlExplorerHostIslandWindow" ||
+                className == "TopLevelWindowForOverflowXamlIsland" ||
+                className == "NotifyIconOverflowWindow" ||
+                className == "Windows.Internal.Shell.TabProxyWindow" ||
+                className == "DV2ControlHost" ||
+                className == "EdgeUiInputTopWndClass")
+            {
+                return false;
+            }
+
+            if (!GetWindowRect(hwnd, out var rect))
+            {
+                return false;
+            }
+
+            bool covers = (rect.Left <= bounds.Left + tolerance) &&
+                          (rect.Top <= bounds.Top + tolerance) &&
+                          (rect.Right >= bounds.Right - tolerance) &&
+                          (rect.Bottom >= bounds.Bottom - tolerance);
+
+            return covers;
         }
     }
 }
