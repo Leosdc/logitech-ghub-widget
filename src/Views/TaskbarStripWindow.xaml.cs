@@ -172,8 +172,9 @@ namespace GHubWidget.Views
             {
                 "Dark" => true,
                 "Light" => false,
-                _ => AppSettings.IsSystemDarkTheme()
+                _ => AppSettings.IsTaskbarDarkTheme()
             };
+            _pillMap.Clear();
             RebuildPills();
         }
 
@@ -350,36 +351,44 @@ namespace GHubWidget.Views
         {
             txtIcon.Text = GetDeviceGlyph(dev);
 
+            Brush iconBrush;
             string batteryText;
             Brush textBrush;
 
             if (!dev.IsActive)
             {
+                iconBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(180, 180, 180) : Color.FromRgb(110, 110, 110));
                 batteryText = "OFF";
                 textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(140, 140, 140) : Color.FromRgb(120, 120, 120));
             }
-            else if (dev.IsCharging)
-            {
-                batteryText = $"⚡ {dev.BatteryPercentage}%";
-                textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(0, 215, 255) : Color.FromRgb(0, 120, 215));
-            }
             else
             {
-                batteryText = $"{dev.BatteryPercentage}%";
-                if (dev.BatteryPercentage > 50)
+                iconBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(255, 255, 255) : Color.FromRgb(26, 26, 26));
+
+                if (dev.IsCharging)
                 {
-                    textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(108, 203, 95) : Color.FromRgb(16, 140, 16));
-                }
-                else if (dev.BatteryPercentage > 20)
-                {
-                    textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(252, 225, 0) : Color.FromRgb(200, 120, 0));
+                    batteryText = $"⚡ {dev.BatteryPercentage}%";
+                    textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(0, 215, 255) : Color.FromRgb(0, 120, 215));
                 }
                 else
                 {
-                    textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(255, 75, 75) : Color.FromRgb(220, 40, 0));
+                    batteryText = $"{dev.BatteryPercentage}%";
+                    if (dev.BatteryPercentage > 50)
+                    {
+                        textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(108, 203, 95) : Color.FromRgb(16, 140, 16));
+                    }
+                    else if (dev.BatteryPercentage > 20)
+                    {
+                        textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(252, 225, 0) : Color.FromRgb(200, 120, 0));
+                    }
+                    else
+                    {
+                        textBrush = new SolidColorBrush(_isDarkTheme ? Color.FromRgb(255, 75, 75) : Color.FromRgb(220, 40, 0));
+                    }
                 }
             }
 
+            txtIcon.Foreground = iconBrush;
             txtBattery.Text = batteryText;
             txtBattery.Foreground = textBrush;
 
@@ -407,7 +416,7 @@ namespace GHubWidget.Views
                 Text = "⚡ Logitech G",
                 FontSize = 12,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = new SolidColorBrush(_isDarkTheme ? System.Windows.Media.Color.FromRgb(160, 160, 160) : System.Windows.Media.Color.FromRgb(100, 100, 100)),
+                Foreground = new SolidColorBrush(_isDarkTheme ? System.Windows.Media.Color.FromRgb(255, 255, 255) : System.Windows.Media.Color.FromRgb(26, 26, 26)),
                 VerticalAlignment = VerticalAlignment.Center
             };
 

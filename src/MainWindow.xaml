@@ -324,7 +324,7 @@
                                                     </Grid.ColumnDefinitions>
 
                                                     <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Win11WindowBg}" BorderBrush="{DynamicResource Win11CardBorder}" BorderThickness="1" Margin="0,0,14,0">
-                                                        <TextBlock Text="{Binding DeviceCategoryIcon}" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding DeviceCategoryIcon}" Foreground="{DynamicResource Win11TextPrimary}" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
 
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">

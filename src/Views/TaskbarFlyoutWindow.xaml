@@ -151,7 +151,7 @@
                 <!-- 2. Connecting / Empty banner -->
                 <Border x:Name="BannerConnecting" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource Win11CardBg}" Margin="12,10,12,0" Padding="12,10" CornerRadius="8" BorderBrush="{DynamicResource Win11CardBorder}" BorderThickness="1">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="⏳" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="⏳" Foreground="{DynamicResource Win11TextPrimary}" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
                         <TextBlock x:Name="TxtConnectingMsg" Text="Aguardando conexão com o agente Logitech G HUB..." Foreground="{DynamicResource Win11TextSecondary}" FontSize="11.5" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
@@ -184,7 +184,7 @@
                                             </Grid.ColumnDefinitions>
 
                                             <!-- Category Icon -->
-                                            <TextBlock Grid.Column="0" Text="{Binding DeviceCategoryIcon}" FontSize="17" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Grid.Column="0" Text="{Binding DeviceCategoryIcon}" Foreground="{DynamicResource Win11TextPrimary}" FontSize="17" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                                             <!-- Device Name & Type -->
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">

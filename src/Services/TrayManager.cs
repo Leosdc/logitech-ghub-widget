@@ -45,13 +45,23 @@ namespace GHubWidget.Services
             UpdateTrayIcons();
         }
 
+        private bool IsEffectiveDarkTaskbar()
+        {
+            return _settings.ThemeMode switch
+            {
+                "Dark" => true,
+                "Light" => false,
+                _ => AppSettings.IsTaskbarDarkTheme()
+            };
+        }
+
         private void SetupFallbackIcon()
         {
             try
             {
                 int iconSize = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSMICON);
                 if (iconSize <= 0) iconSize = 16;
-                var icon = DeviceIconGenerator.CreateOfflineIcon(AppSettings.IsTaskbarDarkTheme(), iconSize);
+                var icon = DeviceIconGenerator.CreateOfflineIcon(IsEffectiveDarkTaskbar(), iconSize);
                 _fallbackIcon = new NotifyIcon
                 {
                     Icon = icon,
@@ -143,7 +153,7 @@ namespace GHubWidget.Services
 
             try
             {
-                bool isDarkTaskbar = AppSettings.IsTaskbarDarkTheme();
+                bool isDarkTaskbar = IsEffectiveDarkTaskbar();
                 int iconSize = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSMICON);
                 if (iconSize <= 0) iconSize = 16;
 

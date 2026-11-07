@@ -6,6 +6,18 @@ O formato segue o padrão [Keep a Changelog](https://keepachangelog.com/pt-BR/1.
 
 ---
 
+## [1.3.4] - 2026-11-07
+
+### 🎨 Contraste Adaptativo de Ícones (Tema Escuro & Tema Claro)
+- **Ícones Brancos no Tema Escuro e Escuros no Tema Claro:**
+  - Corrigida a cor de preenchimento (`Foreground`) dos glifos de periféricos (`🖱️`, `⌨️`, `🎧`) na faixa da barra de tarefas (`TaskbarStripWindow`), que anteriormente herdavam a cor preta padrão do WPF e ficavam com baixo contraste sobre barras de tarefas escuras.
+  - Agora, no **Tema Escuro**, os ícones dos dispositivos ativos são renderizados em branco puro (`#FFFFFF`) e, no **Tema Claro**, em tom escuro de alto contraste (`#1A1A1A`), com tons atenuados (`#B4B4B4` / `#6E6E6E`) para dispositivos inativos.
+- **Consistência Visual no Flyout, Janela Principal e Bandeja:**
+  - Vinculada a propriedade `Foreground="{DynamicResource Win11TextPrimary}"` aos ícones de categoria nos cartões de dispositivos da janela principal (`MainWindow`) e do pop-up rápido (`TaskbarFlyoutWindow`).
+  - Sincronizada a escolha manual de tema (`Claro` / `Escuro` / `Sistema`) com os ícones da bandeja do sistema (`TrayManager`) e com a detecção nativa de tema da barra de tarefas do Windows (`IsTaskbarDarkTheme`).
+
+---
+
 ## [1.3.3] - 2026-11-04
 
 ### 🎮 Ocultamento Automático em Jogos e Aplicativos em Tela Cheia (Fullscreen)
