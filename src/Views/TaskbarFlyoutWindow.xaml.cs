@@ -117,12 +117,48 @@ namespace GHubWidget.Views
             _lastTrayPoint = cursorPoint;
             _outsideTicks = 0;
 
-            // Make sure dimensions are calculated
-            UpdateLayout();
-            Measure(new System.Windows.Size(Width, double.PositiveInfinity));
+            if (!IsVisible)
+            {
+                BeginAnimation(OpacityProperty, null);
+                Opacity = 0;
+                PositionWindow(cursorPoint);
 
-            double targetWidth = Width;
-            double targetHeight = DesiredSize.Height > 0 ? DesiredSize.Height : 280;
+                Show();
+
+                // Force layout pass after HWND/visual tree creation so ItemsControl
+                // containers are generated and ActualHeight reflects real content size.
+                UpdateLayout();
+                PositionWindow(cursorPoint);
+
+                var anim = new DoubleAnimation(0.0, 1.0, TimeSpan.FromMilliseconds(130));
+                BeginAnimation(OpacityProperty, anim);
+            }
+            else
+            {
+                UpdateLayout();
+                PositionWindow(cursorPoint);
+                BeginAnimation(OpacityProperty, null);
+                Opacity = 1.0;
+            }
+
+            if (!_mouseCheckTimer.IsEnabled)
+            {
+                _mouseCheckTimer.Start();
+            }
+        }
+
+        private void PositionWindow(Point cursorPoint)
+        {
+            if (ActualHeight <= 0)
+            {
+                UpdateLayout();
+                Measure(new System.Windows.Size(Width, double.PositiveInfinity));
+            }
+
+            double targetWidth = ActualWidth > 0 ? ActualWidth : Width;
+            double targetHeight = ActualHeight > 0
+                ? ActualHeight
+                : (DesiredSize.Height > 0 ? DesiredSize.Height : 280);
 
             // Determine monitor working area from cursor position
             var screen = Screen.FromPoint(cursorPoint);
@@ -138,7 +174,7 @@ namespace GHubWidget.Views
             if (screen.Bounds.Bottom > workArea.Bottom)
             {
                 // Standard Taskbar at bottom
-                top = workArea.Bottom - targetHeight - 8;
+                top = Math.Max(workArea.Top + 8, workArea.Bottom - targetHeight - 8);
             }
             else if (screen.Bounds.Top < workArea.Top)
             {
@@ -160,22 +196,13 @@ namespace GHubWidget.Views
 
             Left = left;
             Top = top;
+        }
 
-            if (!IsVisible)
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (IsVisible && (e.HeightChanged || e.WidthChanged))
             {
-                Opacity = 0;
-                Show();
-                var anim = new DoubleAnimation(0.0, 1.0, TimeSpan.FromMilliseconds(130));
-                BeginAnimation(OpacityProperty, anim);
-            }
-            else
-            {
-                Opacity = 1.0;
-            }
-
-            if (!_mouseCheckTimer.IsEnabled)
-            {
-                _mouseCheckTimer.Start();
+                PositionWindow(_lastTrayPoint);
             }
         }
 

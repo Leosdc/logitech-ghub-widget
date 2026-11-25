@@ -22,6 +22,7 @@
         SnapsToDevicePixels="True"
         Deactivated="Window_Deactivated"
         KeyDown="Window_KeyDown"
+        SizeChanged="Window_SizeChanged"
         Closing="Window_Closing">
 
     <Window.Resources>
